@@ -2,6 +2,7 @@ namespace Melissa.Infraestructure.Holidays;
 
 public class Holiday
 {
+    public int Id { get; set; }
     public DateTime Date { get; set; }
     public string Description { get; set; }
     public HolidayType Type { get; set; }

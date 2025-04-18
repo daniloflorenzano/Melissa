@@ -12,6 +12,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Melissa.Core\Melissa.Core.csproj" />
+      <ProjectReference Include="..\Melissa.Infraestructure\Melissa.Infraestructure.csproj" />
     </ItemGroup>
 
 </Project>
