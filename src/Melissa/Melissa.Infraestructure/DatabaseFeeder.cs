@@ -27,6 +27,44 @@ public static class DatabaseFeeder
 
             csv.Context.RegisterClassMap<HolidayMap>();
             var holidays = csv.GetRecords<Holiday>().ToList();
+            
+            Parallel.ForEach(holidays, holiday =>
+            {
+                if (string.IsNullOrEmpty(holiday.State))
+                    return;
+
+                holiday.State = holiday.State.ToUpper() switch
+                {
+                    "AC" => "Acre",
+                    "AL" => "Alagoas",
+                    "AP" => "Amapá",
+                    "AM" => "Amazonas",
+                    "BA" => "Bahia",
+                    "CE" => "Ceará",
+                    "DF" => "Distrito Federal",
+                    "ES" => "Espírito Santo",
+                    "GO" => "Goiás",
+                    "MA" => "Maranhão",
+                    "MT" => "Mato Grosso",
+                    "MS" => "Mato Grosso do Sul",
+                    "MG" => "Minas Gerais",
+                    "PA" => "Pará",
+                    "PB" => "Paraíba",
+                    "PR" => "Paraná",
+                    "PE" => "Pernambuco",
+                    "PI" => "Piauí",
+                    "RJ" => "Rio de Janeiro",
+                    "RN" => "Rio Grande do Norte",
+                    "RS" => "Rio Grande do Sul",
+                    "RO" => "Rondônia",
+                    "RR" => "Roraima",
+                    "SC" => "Santa Catarina",
+                    "SP" => "São Paulo",
+                    "SE" => "Sergipe",
+                    "TO" => "Tocantins",
+                    _ => holiday.State
+                };
+            });
 
             context.Holidays.AddRange(holidays);
             await context.SaveChangesAsync();
