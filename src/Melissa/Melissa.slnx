@@ -1,0 +1,5 @@
+﻿<Solution>
+  <Project Path="Melissa.ConsoleClient\Melissa.ConsoleClient.csproj" Type="Classic C#" />
+  <Project Path="Melissa.Core\Melissa.Core.csproj" Type="Classic C#" />
+  <Project Path="Melissa.WebServer\Melissa.WebServer.csproj" Type="Classic C#" />
+</Solution>
