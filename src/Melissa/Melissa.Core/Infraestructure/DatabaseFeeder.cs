@@ -2,9 +2,8 @@ using System.Globalization;
 using CsvHelper;
 using CsvHelper.Configuration;
 using Melissa.Core.AiTools.Holidays;
-using Melissa.Infraestructure.Holidays;
 
-namespace Melissa.Infraestructure;
+namespace Melissa.Core.Infraestructure;
 
 public static class DatabaseFeeder
 {

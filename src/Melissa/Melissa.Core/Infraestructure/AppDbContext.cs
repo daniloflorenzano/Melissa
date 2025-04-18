@@ -1,7 +1,7 @@
 using Melissa.Core.AiTools.Holidays;
 using Microsoft.EntityFrameworkCore;
 
-namespace Melissa.Infraestructure;
+namespace Melissa.Core.Infraestructure;
 
 public class AppDbContext : DbContext
 {

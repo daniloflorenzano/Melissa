@@ -1,4 +1,4 @@
-namespace Melissa.Infraestructure.Holidays;
+namespace Melissa.Core.AiTools.Holidays;
 
 public class Holiday
 {

@@ -2,7 +2,7 @@ using System.Net.WebSockets;
 using System.Text;
 using Melissa.Core.Assistants;
 using Melissa.Core.Chats.Ollama;
-using Melissa.Infraestructure;
+using Melissa.Core.Infraestructure;
 using Melissa.WebServer;
 
 var builder = WebApplication.CreateBuilder(args);

@@ -17,4 +17,8 @@
       <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.4" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Melissa.Core\Melissa.Core.csproj" />
+    </ItemGroup>
+
 </Project>
