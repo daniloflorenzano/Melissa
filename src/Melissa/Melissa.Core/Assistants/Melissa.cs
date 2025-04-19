@@ -9,16 +9,16 @@ public class Melissa : Assistant
     public Melissa(IChatBuilder chatBuilder) : base(chatBuilder)
     {
         chatBuilder
-            .WithModelName(ModelName.Mistral)
+            .WithModelName(ModelName.Llama32_3B)
             .WithAssistantName("Melissa")
             .WithPurposeDescription("""
-                                    ser uma assistente pessoal inteligente chamada Melissa que pode responder perguntas gerais
-                                     e acessar APIs externas.
+                                    Ser uma assistente pessoal inteligente chamada Melissa, capaz de responder perguntas gerais e usar ferramentas externas quando necessário.
+                                    Use ferramentas quando a pergunta envolver informações específicas como datas de feriados no Brasil.
                                     """)
-            .WithAdicionalDescription(
-                "dê suas respostas de maneira curta e direta, com no máximo 140 caracteres e como se estivesse respondendo oralmente.")
+            .WithAdicionalDescription("Responda de forma breve, como se estivesse falando oralmente, usando frases curtas e diretas.")
             //.WithTool(new GetWeatherTool());
-            .WithTool(new GetHolidaysTool());
+            .WithTool(new GetBrazilianHolidaysTool())
+            .WithTool(new GetHolidayDateByNameTool());
         Chat = chatBuilder.Build().Result;
     }
 

@@ -27,9 +27,19 @@ public static class DatabaseFeeder
 
             csv.Context.RegisterClassMap<HolidayMap>();
             var holidays = csv.GetRecords<Holiday>().ToList();
+            var nationals = holidays.Where(h => h.Type == HolidayType.National).ToList();
+            var duplicatesToRemove = new List<Holiday>();
             
             Parallel.ForEach(holidays, holiday =>
             {
+                // remove nacionais duplicados nas cidades
+                if (holiday.Type is HolidayType.City or HolidayType.State
+                    && nationals.Any(n => n.Date == holiday.Date && n.Description == holiday.Description))
+                {
+                    duplicatesToRemove.Add(holiday);
+                    return;
+                }
+                
                 if (string.IsNullOrEmpty(holiday.State))
                     return;
 
@@ -66,7 +76,7 @@ public static class DatabaseFeeder
                 };
             });
 
-            context.Holidays.AddRange(holidays);
+            context.Holidays.AddRange(holidays.Except(duplicatesToRemove));
             await context.SaveChangesAsync();
         }
         catch (Exception e)

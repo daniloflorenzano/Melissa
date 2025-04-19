@@ -9,20 +9,22 @@ public class HolidayService
 
     public async Task<List<Holiday>> GetHolidaysAsync(string? city, string? state, string month)
     {
-        var wantsNationalHoliday = string.IsNullOrEmpty(city) && string.IsNullOrEmpty(state);
+        city = city?.ToLower();
+        if (city == "none") city = string.Empty;
+        if (state == "none") state = string.Empty;
+        
+        var wantsEveryHoliday = string.IsNullOrEmpty(city) && string.IsNullOrEmpty(state);
 
-        if (wantsNationalHoliday)
+        if (wantsEveryHoliday)
         {
             var monthNumber = GetMonth(month);
             return await _dbContext.Holidays
-                .Where(h => h.Type == HolidayType.National && h.Date.Month == monthNumber)
+                .Where(h => h.Date.Month == monthNumber)
                 .ToListAsync();
         }
 
         if (!string.IsNullOrEmpty(state) && state.Length == 2) 
             state = GetStateByUf(state);
-        
-        city = city?.ToLower();
 
         var wantsStateHoliday =
             string.IsNullOrEmpty(city) && !string.IsNullOrEmpty(state) && !string.IsNullOrEmpty(month);
@@ -124,5 +126,25 @@ public class HolidayService
             // por padrao retorna o mes atual
             _ => DateTime.Now.Month
         };
+    }
+    
+    public async Task<Holiday?> SearchHolidayByNameAsync(string name)
+    {
+        var holidays = _dbContext.Holidays.Select(h => h.Description).Distinct().ToList();
+
+        var mostSimilar = holidays
+            .Select(h => new
+            {
+                Name = h,
+                Distance = Fastenshtein.Levenshtein.Distance(h.ToLower(), name.ToLower())
+            })
+            .OrderBy(x => x.Distance)
+            .FirstOrDefault();
+
+        var holidayDescription = mostSimilar?.Name;
+        if (string.IsNullOrEmpty(holidayDescription))
+            return null;
+        
+        return await _dbContext.Holidays.FirstOrDefaultAsync(h => h.Description == holidayDescription);
     }
 }
