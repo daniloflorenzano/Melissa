@@ -3,7 +3,7 @@ using CsvHelper;
 using CsvHelper.Configuration;
 using Melissa.Core.AiTools.Holidays;
 
-namespace Melissa.Core.Infraestructure;
+namespace Melissa.Core.ExternalData;
 
 public static class DatabaseFeeder
 {

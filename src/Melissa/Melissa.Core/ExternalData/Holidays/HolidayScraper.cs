@@ -4,7 +4,7 @@ using CsvHelper;
 using HtmlAgilityPack;
 using Melissa.Core.AiTools.Holidays;
 
-namespace Melissa.Core.Infraestructure.Holidays;
+namespace Melissa.Core.ExternalData.Holidays;
 
 public class HolidayScraper
 {

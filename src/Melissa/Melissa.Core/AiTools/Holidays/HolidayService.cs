@@ -1,4 +1,4 @@
-using Melissa.Core.Infraestructure;
+using Melissa.Core.ExternalData;
 using Microsoft.EntityFrameworkCore;
 
 namespace Melissa.Core.AiTools.Holidays;
