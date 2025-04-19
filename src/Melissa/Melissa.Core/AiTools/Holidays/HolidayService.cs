@@ -13,13 +13,13 @@ public class HolidayService
         if (city == "none") city = string.Empty;
         if (state == "none") state = string.Empty;
         
-        var wantsEveryHoliday = string.IsNullOrEmpty(city) && string.IsNullOrEmpty(state);
+        var wantsNational = string.IsNullOrEmpty(city) && string.IsNullOrEmpty(state);
 
-        if (wantsEveryHoliday)
+        if (wantsNational)
         {
             var monthNumber = GetMonth(month);
             return await _dbContext.Holidays
-                .Where(h => h.Date.Month == monthNumber)
+                .Where(h => h.Type == HolidayType.National && h.Date.Month == monthNumber)
                 .ToListAsync();
         }
 
@@ -32,7 +32,12 @@ public class HolidayService
         {
             var monthNumber = GetMonth(month);
             return await _dbContext.Holidays
-                .Where(h => h.State == state && h.Date.Month == monthNumber)
+                .Where(h => (h.State == state || h.Type == HolidayType.National) && 
+                            h.Date.Month == monthNumber)
+                .GroupBy(h => h.Description)
+                .Select(g => g.OrderBy(h => h.Type == HolidayType.National ? 0 : 
+                        h.Type == HolidayType.State ? 1 : 2)
+                    .First())
                 .ToListAsync();
         }
 
@@ -43,13 +48,21 @@ public class HolidayService
             if (string.IsNullOrEmpty(state))
             {
                 return await _dbContext.Holidays
-                    .Where(h => h.City == city && h.Date.Month == monthNumber)
+                    .Where(h => (h.City == city || h.Type == HolidayType.National) && h.Date.Month == monthNumber)
+                    .GroupBy(h => h.Description)
+                    .Select(g => g.OrderBy(h => h.Type == HolidayType.National ? 0 : 
+                            h.Type == HolidayType.State ? 1 : 2)
+                        .First())
                     .ToListAsync();
             }
 
             return await _dbContext.Holidays
-                .Where(h => h.City == city && h.State == state &&
+                .Where(h => (h.City == city || (h.State == state && h.Type == HolidayType.State) || h.Type == HolidayType.National) &&
                             h.Date.Month == monthNumber)
+                .GroupBy(h => h.Description)
+                .Select(g => g.OrderBy(h => h.Type == HolidayType.National ? 0 : 
+                        h.Type == HolidayType.State ? 1 : 2)
+                    .First())
                 .ToListAsync();
         }
 
@@ -145,6 +158,10 @@ public class HolidayService
         if (string.IsNullOrEmpty(holidayDescription))
             return null;
         
-        return await _dbContext.Holidays.FirstOrDefaultAsync(h => h.Description == holidayDescription);
+        return await _dbContext.Holidays
+            .Where(h => h.Description == holidayDescription)
+            .OrderBy(h => h.Type == HolidayType.National ? 0 : 
+                h.Type == HolidayType.State ? 1 : 2)
+            .FirstOrDefaultAsync();
     }
 }
