@@ -33,16 +33,9 @@ public class MelissaHub : Hub
             await ms.WriteAsync(chunk, cancellationToken);
         }
 
-        var pcmBytes = ms.ToArray();
-        var wavBytes = GenerateWav(pcmBytes);
-        
-        var wavStream = new MemoryStream(wavBytes);
-        
-        wavStream.Seek(0, SeekOrigin.Begin);
+        var ggmlType = GgmlType.Medium;
+        var modelFileName = "ggml-medium.bin";
 
-        var ggmlType = GgmlType.Base;
-        var modelFileName = "ggml-base.bin";
-        
         if (!File.Exists(modelFileName))
         {
             await DownloadModel(modelFileName, ggmlType);
@@ -50,9 +43,17 @@ public class MelissaHub : Hub
         
         using var whisperFactory = WhisperFactory.FromPath("ggml-base.bin");
         await using var processor = whisperFactory.CreateBuilder()
-            .WithLanguage("pt-BR")
+            .WithLanguage("pt")           
             .Build();
-        
+
+        var pcmBytes = ms.ToArray();
+        var wavBytes = GenerateWav(pcmBytes);
+
+        File.WriteAllBytes("teste.wav", wavBytes);
+
+        var wavStream = new MemoryStream(wavBytes);
+        wavStream.Seek(0, SeekOrigin.Begin);
+
         var msgBuilder = new StringBuilder();
         await foreach (var result in processor.ProcessAsync(wavStream, cancellationToken))
         {
@@ -80,8 +81,8 @@ public class MelissaHub : Hub
             rate: "+25%",
             volume: "+0%"
         );
-    
-        var tempMp3File = Path.GetTempFileName() + ".mp3";
+
+        var tempMp3File = Path.GetTempPath() + "temp.mp3";
         edgeTts = new EdgeTTSNet(options);
         await edgeTts.Save(replyBuilder.ToString(), tempMp3File, cancellationToken);
         
@@ -91,7 +92,7 @@ public class MelissaHub : Hub
         yield return replyBytes;
     }
     
-    private static byte[] GenerateWav(byte[] pcmData, int sampleRate = 44100, short bitsPerSample = 16, short channels = 1)
+    private static byte[] GenerateWav(byte[] pcmData, int sampleRate = 16000, short bitsPerSample = 16, short channels = 1)
     {
         using var ms = new MemoryStream();
         using var writer = new BinaryWriter(ms);
