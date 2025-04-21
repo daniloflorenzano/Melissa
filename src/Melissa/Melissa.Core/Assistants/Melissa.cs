@@ -1,4 +1,5 @@
 using Melissa.Core.AiTools.Holidays;
+using Melissa.Core.AiTools.Time;
 using Melissa.Core.AiTools.Weather;
 using Melissa.Core.Chats;
 
@@ -18,7 +19,8 @@ public class Melissa : Assistant
             .WithAdicionalDescription("Responda de forma breve, como se estivesse falando oralmente, usando frases curtas e diretas.")
             //.WithTool(new GetWeatherTool());
             .WithTool(new GetBrazilianHolidaysTool())
-            .WithTool(new GetHolidayDateByNameTool());
+            .WithTool(new GetHolidayDateByNameTool())
+            .WithTool(new GetCurrentDateTimeTool());
         Chat = chatBuilder.Build().Result;
     }
 
