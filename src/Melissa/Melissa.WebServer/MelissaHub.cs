@@ -4,6 +4,7 @@ using edge_tts_net;
 using Melissa.Core.Assistants;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Serilog;
 using Whisper.net;
 using Whisper.net.Ggml;
 using MelissaAssistant = Melissa.Core.Assistants.Melissa;
@@ -41,15 +42,13 @@ public class MelissaHub : Hub
             await DownloadModel(modelFileName, ggmlType);
         }
         
-        using var whisperFactory = WhisperFactory.FromPath("ggml-base.bin");
+        using var whisperFactory = WhisperFactory.FromPath("ggml-medium.bin");
         await using var processor = whisperFactory.CreateBuilder()
             .WithLanguage("pt")           
             .Build();
 
         var pcmBytes = ms.ToArray();
         var wavBytes = GenerateWav(pcmBytes);
-
-        File.WriteAllBytes("teste.wav", wavBytes);
 
         var wavStream = new MemoryStream(wavBytes);
         wavStream.Seek(0, SeekOrigin.Begin);
@@ -60,7 +59,10 @@ public class MelissaHub : Hub
             msgBuilder.Append(result.Text);
         }
         
-        var question = new Question(msgBuilder.ToString(), "AudioHub", DateTimeOffset.Now);
+        var message = msgBuilder.ToString();
+        Log.Information("Mensagem recebida: {0}", message);
+        
+        var question = new Question(message, "AudioHub", DateTimeOffset.Now);
         var replyBuilder = new StringBuilder();
         
         await foreach (var t in melissa.Ask(question, cancellationToken))
@@ -84,7 +86,11 @@ public class MelissaHub : Hub
 
         var tempMp3File = Path.GetTempPath() + "temp.mp3";
         edgeTts = new EdgeTTSNet(options);
-        await edgeTts.Save(replyBuilder.ToString(), tempMp3File, cancellationToken);
+        
+        var reply = replyBuilder.ToString();
+        Log.Information("Resposta recebida: {0}", reply);
+        
+        await edgeTts.Save(reply, tempMp3File, cancellationToken);
         
         var replyBytes = await File.ReadAllBytesAsync(tempMp3File, cancellationToken);
         File.Delete(tempMp3File);
