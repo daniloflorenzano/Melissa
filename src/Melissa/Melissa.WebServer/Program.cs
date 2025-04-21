@@ -2,10 +2,21 @@ using System.Net.WebSockets;
 using System.Text;
 using Melissa.Core.Assistants;
 using Melissa.Core.Chats.Ollama;
+using Melissa.Core.ExternalData;
+using Melissa.WebServer;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var app = builder.Build();
+
+// TODO: pensar em como fazer quando tornar a aplicação em uma imagem docker
+var holidaysCsvPath = Path.Combine(
+    PathUtils.TryGetSolutionDirectoryInfo().Parent!.Parent!.FullName,
+    "data",
+    app.Configuration.GetValue<string>("HolidaysCsvName")!
+);
+
+await DatabaseFeeder.FeedHolidays(holidaysCsvPath);
 
 var websocketOptions = new WebSocketOptions()
 {
@@ -48,26 +59,30 @@ static async Task TalkToMelissaNew(WebSocket socket, Assistant assistant)
     {
         var userText = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
         var question = new Question(userText, "WSClient", DateTimeOffset.Now);
-        
+
         if (await assistant.CanUse())
         {
             await foreach (var answerToken in assistant.Ask(question))
             {
                 var response = Encoding.UTF8.GetBytes(answerToken);
-                await socket.SendAsync(new ArraySegment<byte>(response), WebSocketMessageType.Text, false, CancellationToken.None);
+                await socket.SendAsync(new ArraySegment<byte>(response), WebSocketMessageType.Text, false,
+                    CancellationToken.None);
             }
-            
+
             // avisa fim da mensagem
-            await socket.SendAsync(new ArraySegment<byte>("\n"u8.ToArray()), WebSocketMessageType.Text, true, CancellationToken.None);
+            await socket.SendAsync(new ArraySegment<byte>("\n"u8.ToArray()), WebSocketMessageType.Text, true,
+                CancellationToken.None);
         }
         else
         {
             var response = "Melissa: Não posso responder perguntas agora."u8.ToArray();
-            await socket.SendAsync(new ArraySegment<byte>(response), WebSocketMessageType.Text, true, CancellationToken.None);
+            await socket.SendAsync(new ArraySegment<byte>(response), WebSocketMessageType.Text, true,
+                CancellationToken.None);
         }
-        
+
         receiveResult = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
     }
 
-    await socket.CloseAsync(receiveResult.CloseStatus.Value, receiveResult.CloseStatusDescription, CancellationToken.None);
+    await socket.CloseAsync(receiveResult.CloseStatus.Value, receiveResult.CloseStatusDescription,
+        CancellationToken.None);
 }
