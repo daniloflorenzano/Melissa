@@ -1,18 +1,16 @@
-using Melissa.Core.AiTools.Weather.External;
-using OllamaSharp;
+
+
+using DefaultNamespace;
 
 namespace Melissa.Core.AiTools.Weather;
 
 public class WeatherOllamaTool
 {
-    /// <summary>
-    /// Consulta o atual clima de uma cidade.
-    /// </summary>
-    /// <param name="city">Nome da cidade</param>
-    [OllamaTool]
-    public static async Task<WeatherResponse> GetWeather(string city)
-    {
-        var weatherApi = new GoogleWeatherService();
-        return await weatherApi.GetCurrentWeatherAsync(city);
-    }
+   public async Task GetCurrentWeatherByLocation()
+   {
+      var location = "Porto Real";
+      var service = new WeatherService();
+
+      var weather = await service.GetWeatherAsync(location, null);
+   }
 }
