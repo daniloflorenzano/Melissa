@@ -1,45 +1,34 @@
-﻿using System.Net.WebSockets;
-using System.Text;
+﻿using Microsoft.AspNetCore.SignalR.Client;
 
-var ws = new ClientWebSocket();
-await ws.ConnectAsync(new Uri("ws://localhost:5179/askmelissa"), CancellationToken.None);
+var connection = new HubConnectionBuilder()
+    .WithUrl("http://localhost:5179/melissa")
+    .Build();
 
-var recieveTask = Task.Run(async () =>
+await connection.StartAsync();
+
+var cancellationToken = new CancellationTokenSource();
+
+connection.Closed += async (error) =>
 {
-    var buffer = new byte[1024];
-    while (true)
+    await Task.Delay(new Random().Next(0, 5) * 1000);
+    await connection.StartAsync();
+};
+
+
+while (true)
+{
+    var message = Console.ReadLine();
+
+    if (message == "exit")
     {
-        var result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                
-        if (result.MessageType == WebSocketMessageType.Close)
-        {
-            await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
-            break;
-        }
-                
-        var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-        Console.Write(message);
+        await connection.StopAsync();
+        break;
     }
 
-});
-        
-var sendTask = Task.Run(async () =>
-{
-    while (true)
+    var stream = connection.StreamAsync<string>("AskMelissaText", message, cancellationToken: cancellationToken.Token);
+    await foreach (var word in stream)
     {
-        var message = Console.ReadLine();
-        if (message == "exit")
-        {
-            await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
-            break;
-        }
-
-        if (string.IsNullOrWhiteSpace(message)) 
-            continue;
-        
-        var bytes = Encoding.UTF8.GetBytes(message);
-        await ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
+        Console.Write(word);
     }
-});
-
-await Task.WhenAny(recieveTask, sendTask);
+    Console.WriteLine();
+}
