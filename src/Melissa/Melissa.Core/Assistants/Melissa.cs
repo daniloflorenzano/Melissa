@@ -45,7 +45,7 @@ public class Melissa : Assistant
         await Chat.ChangeModel(modelName);
     }
 
-    public override IAsyncEnumerable<string> Ask(Question question)
+    public override IAsyncEnumerable<string> Ask(Question question, CancellationToken cancellationToken = default)
     {
         if (IsUsingCryptography)
         {
@@ -56,9 +56,9 @@ public class Melissa : Assistant
             var copy = question with { Text = decrypted };
 
             // encrypta a resposta
-            return base.Ask(copy);
+            return base.Ask(copy, cancellationToken);
         }
 
-        return base.Ask(question);
+        return base.Ask(question, cancellationToken);
     }
 }
