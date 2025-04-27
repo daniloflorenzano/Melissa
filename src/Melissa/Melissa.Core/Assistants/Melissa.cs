@@ -8,6 +8,7 @@ public class Melissa : Assistant
 {
     public Melissa(IChatBuilder chatBuilder) : base(chatBuilder)
     {
+        var currentDate = DateTime.Now.Date;
         chatBuilder
             .WithModelName(ModelName.Llama32_3B)
             .WithAssistantName("Melissa")
@@ -15,8 +16,8 @@ public class Melissa : Assistant
                                     Ser uma assistente pessoal inteligente chamada Melissa, capaz de responder perguntas gerais e usar ferramentas externas quando necessário.
                                     Use ferramentas quando a pergunta envolver informações específicas como datas de feriados no Brasil.
                                     """)
-            .WithAdicionalDescription("Responda de forma breve, como se estivesse falando oralmente, usando frases curtas e diretas.")
-            //.WithTool(new GetWeatherTool());
+            .WithAdicionalDescription($"Responda de forma breve, como se estivesse falando oralmente, usando frases curtas e diretas. O dia atual é {currentDate}")
+            .WithTool(new GetWeatherByLocationTool())
             .WithTool(new GetBrazilianHolidaysTool())
             .WithTool(new GetHolidayDateByNameTool());
         Chat = chatBuilder.Build().Result;
