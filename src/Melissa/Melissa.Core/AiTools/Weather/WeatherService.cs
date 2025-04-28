@@ -82,7 +82,7 @@ public class WeatherService
 
         #endregion
         
-        string[] cityStateArr = cityState.Split(',');
+        string[] cityStateArr = cityState.Contains("-") ? cityState.Split('-') : cityState.Split(',');
 
         var weather = new Weather()
         {
