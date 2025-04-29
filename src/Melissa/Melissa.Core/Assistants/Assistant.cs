@@ -1,9 +1,12 @@
 using Melissa.Core.Chats;
+using Serilog;
 
 namespace Melissa.Core.Assistants;
 
 public abstract class Assistant
 {
+    public abstract string Name { get; }
+    
     protected IChat Chat = null!;
 
     protected Assistant(IChatBuilder chatBuilder)
@@ -12,7 +15,15 @@ public abstract class Assistant
 
     public async Task<bool> CanUse()
     {
-        return await Chat.IsChatReady();
+        try
+        {
+            return await Chat.IsChatReady();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{assistantName} não está disponível.", Name);
+            return false;
+        }
     }
     
     public virtual IAsyncEnumerable<string> Ask(Question question, CancellationToken cancellationToken = default)
