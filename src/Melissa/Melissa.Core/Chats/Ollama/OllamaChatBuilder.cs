@@ -1,5 +1,6 @@
 using Melissa.Core.Utils;
 using OllamaSharp;
+using Serilog;
 
 namespace Melissa.Core.Chats.Ollama;
 
@@ -17,17 +18,35 @@ public class OllamaChatBuilder : IChatBuilder
 
     public async Task<IChat> Build()
     {
-        var uri = new Uri("http://localhost:11434");
-        var ollama = new OllamaApiClient(uri);
-        
-        var modelName = EnumHelper.GetEnumDescription(ModelName);
-        ollama.SelectedModel = modelName;
+        try
+        {
+            var uri = new Uri("http://localhost:11434");
+            var ollama = new OllamaApiClient(uri);
 
-        await foreach (var status in ollama.PullModelAsync(modelName))
-            Console.WriteLine($"{status.Percent}% {status.Status}");
+            var modelName = EnumHelper.GetEnumDescription(ModelName);
+            ollama.SelectedModel = modelName;
 
-        var chat = new Chat(ollama, SystemMessage);
-        
-        return new OllamaChatWrapper(chat, Tools);
+            var availableModels = await ollama.ListLocalModelsAsync();
+            var isSelectedModelAvailable = availableModels.Any(m => m.Name == modelName);
+
+            if (!isSelectedModelAvailable)
+            {
+                await foreach (var status in ollama.PullModelAsync(modelName))
+                    Console.WriteLine($"{status?.Percent}% {status?.Status}");
+            }
+
+            var chat = new Chat(ollama, SystemMessage);
+            return new OllamaChatWrapper(chat, Tools);
+        }
+        catch (HttpRequestException e)
+        {
+            Log.Error(e, "Erro ao iniciar chat. Provavelmente o servidor Ollama está offline ou em uma porta diferente da esperada.");
+            throw;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Erro ao iniciar chat.");
+            throw;
+        }
     }
 }
