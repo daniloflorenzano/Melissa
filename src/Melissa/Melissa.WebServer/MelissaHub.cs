@@ -16,6 +16,9 @@ public class MelissaHub : Hub
     public async IAsyncEnumerable<string> AskMelissaText(string message, [FromServices] MelissaAssistant melissa,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        if (!await melissa.CanUse())
+            yield return "Desculpe, parece que não consigo te responder no momento. Por favor, confira se o Ollama está em execução";
+        
         var question = new Question(message, "TextHub", DateTimeOffset.Now);
         await foreach (var t in melissa.Ask(question, cancellationToken))
         {
@@ -60,17 +63,23 @@ public class MelissaHub : Hub
         }
         
         var message = msgBuilder.ToString();
-        Log.Information("Mensagem recebida: {0}", message);
+        Log.Information("Usuário: {0}", message);
         
         var question = new Question(message, "AudioHub", DateTimeOffset.Now);
         var replyBuilder = new StringBuilder();
-        
-        await foreach (var t in melissa.Ask(question, cancellationToken))
+
+        if (await melissa.CanUse())
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            replyBuilder.Append(t);
+            await foreach (var t in melissa.Ask(question, cancellationToken))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                replyBuilder.Append(t);
+            }   
         }
-        
+        else
+        {
+            replyBuilder.Append("Desculpe, parece que não consigo te responder no momento. Por favor, confira se o Ollama está em execução");
+        }
         
         var edgeTts = new EdgeTTSNet();
     
@@ -88,7 +97,7 @@ public class MelissaHub : Hub
         edgeTts = new EdgeTTSNet(options);
         
         var reply = replyBuilder.ToString();
-        Log.Information("Resposta recebida: {0}", reply);
+        Log.Information("Assistente: {0}", reply);
         
         await edgeTts.Save(reply, tempMp3File, cancellationToken);
         
