@@ -8,21 +8,23 @@ public abstract class Assistant
     public abstract string Name { get; }
     
     protected IChat Chat = null!;
+    public abstract string UnavailabilityMessage { get; }
 
     protected Assistant(IChatBuilder chatBuilder)
     {
     }
 
-    public async Task<bool> CanUse()
+    public async Task<(bool isAvailable, string statusMessage)> CanUse()
     {
         try
         {
-            return await Chat.IsChatReady();
+            var canUse = await Chat.IsChatReady();
+            return (canUse, string.Empty);
         }
         catch (Exception e)
         {
             Log.Error(e, "{assistantName} não está disponível.", Name);
-            return false;
+            return (false, UnavailabilityMessage);
         }
     }
     

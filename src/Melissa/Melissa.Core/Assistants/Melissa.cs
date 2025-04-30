@@ -8,6 +8,7 @@ namespace Melissa.Core.Assistants;
 public class Melissa : Assistant
 {
     public sealed override string Name => nameof(Melissa);
+    public sealed override string UnavailabilityMessage => "Desculpe, parece que não consigo te responder no momento. Por favor, confira se o Ollama está em execução.";
     
     public Melissa(IChatBuilder chatBuilder) : base(chatBuilder)
     {
