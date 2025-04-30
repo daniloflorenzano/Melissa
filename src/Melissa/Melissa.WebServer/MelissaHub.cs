@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading.Channels;
 using edge_tts_net;
 using Melissa.Core.Assistants;
 using Microsoft.AspNetCore.Mvc;
@@ -16,10 +17,13 @@ public class MelissaHub : Hub
     public async IAsyncEnumerable<string> AskMelissaText(string message, [FromServices] MelissaAssistant melissa,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        var (isAvailable, statusMessage) = await melissa.CanUse();
+        if (!isAvailable)
+            yield return statusMessage;
+        
         var question = new Question(message, "TextHub", DateTimeOffset.Now);
-        await foreach (var t in melissa.Ask(question, cancellationToken))
+        await foreach (var t in SafeAskMelissa(melissa, question, cancellationToken))
         {
-            cancellationToken.ThrowIfCancellationRequested();
             yield return t;
         }
     }
@@ -60,17 +64,24 @@ public class MelissaHub : Hub
         }
         
         var message = msgBuilder.ToString();
-        Log.Information("Mensagem recebida: {0}", message);
+        Log.Information("Usuário: {0}", message);
         
         var question = new Question(message, "AudioHub", DateTimeOffset.Now);
         var replyBuilder = new StringBuilder();
-        
-        await foreach (var t in melissa.Ask(question, cancellationToken))
+
+        var (isAvailable, statusMessage) = await melissa.CanUse();
+        if (isAvailable)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            replyBuilder.Append(t);
+            await foreach (var t in SafeAskMelissa(melissa, question, cancellationToken))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                replyBuilder.Append(t);
+            }   
         }
-        
+        else
+        {
+            replyBuilder.Append(statusMessage);
+        }
         
         var edgeTts = new EdgeTTSNet();
     
@@ -88,7 +99,7 @@ public class MelissaHub : Hub
         edgeTts = new EdgeTTSNet(options);
         
         var reply = replyBuilder.ToString();
-        Log.Information("Resposta recebida: {0}", reply);
+        Log.Information("Assistente: {0}", reply);
         
         await edgeTts.Save(reply, tempMp3File, cancellationToken);
         
@@ -138,5 +149,39 @@ public class MelissaHub : Hub
         await using var modelStream = await WhisperGgmlDownloader.Default.GetGgmlModelAsync(ggmlType);
         await using var fileWriter = File.OpenWrite(fileName);
         await modelStream.CopyToAsync(fileWriter);
+    }
+
+    private async IAsyncEnumerable<string> SafeAskMelissa(MelissaAssistant melissa, Question question,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var channel = Channel.CreateUnbounded<string>();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await foreach (var item in melissa.Ask(question, cancellationToken))
+                {
+                    await channel.Writer.WriteAsync(item, cancellationToken);
+                }
+            }
+            catch (Exception e)
+            {
+                await channel.Writer.WriteAsync(melissa.UnavailabilityMessage, cancellationToken);
+                Log.Error(e, "Resposta da assistente interrompida por uma exceção");
+            }
+            finally
+            {
+                channel.Writer.Complete();
+            }
+        }, cancellationToken);
+
+        while (await channel.Reader.WaitToReadAsync(cancellationToken))
+        {
+            while (channel.Reader.TryRead(out var item))
+            {
+                yield return item;
+            }
+        }
     }
 }

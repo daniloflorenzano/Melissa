@@ -1,4 +1,4 @@
-using Melissa.Core.Chats.Ollama;
+using Melissa.Core.Assistants;
 using Melissa.Core.ExternalData;
 using Melissa.WebServer;
 using Serilog;
@@ -10,7 +10,10 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateLogger();
 
-var melissa = new Melissa.Core.Assistants.Melissa(new OllamaChatBuilder());
+var assistantFactory = new AssistantFactory();
+var melissa = await assistantFactory.TryCreateMelissa(TimeSpan.FromSeconds(10));
+
+// A assistente precisa ser um Singleton para ser persistido o contexto da conversa
 builder.Services.AddSingleton(melissa);
 
 var app = builder.Build();

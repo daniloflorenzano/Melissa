@@ -7,17 +7,22 @@ namespace Melissa.Core.Assistants;
 
 public class Melissa : Assistant
 {
+    public sealed override string Name => nameof(Melissa);
+    public sealed override string UnavailabilityMessage => "Desculpe, parece que não consigo te responder no momento. Por favor, confira se o Ollama está em execução.";
+    
     public Melissa(IChatBuilder chatBuilder) : base(chatBuilder)
     {
-        var currentDate = DateTime.Now.Date;
         chatBuilder
             .WithModelName(ModelName.Llama32_3B)
-            .WithAssistantName("Melissa")
-            .WithPurposeDescription("""
-                                    Ser uma assistente pessoal inteligente chamada Melissa, capaz de responder perguntas gerais e usar ferramentas externas quando necessário.
-                                    Use ferramentas quando a pergunta envolver informações específicas como datas de feriados no Brasil.
-                                    """)
-            .WithAdicionalDescription($"Responda de forma breve, como se estivesse falando oralmente, usando frases curtas e diretas. O dia atual é {currentDate}")
+            .WithAssistantName(Name)
+            .WithPurposeDescription($"Ser uma assistente pessoal inteligente chamada {Name}, capaz de responder perguntas gerais e usar ferramentas específicas quando necessário.")
+            .WithAdicionalDescription("Sempre responda seu propósito quando for perguntado ou solicitado que se apresente.")
+            .WithAdicionalDescription("Responda de forma breve, como se estivesse falando oralmente, usando frases curtas, diretas e sempre em português do Brasil.")
+            .WithAdicionalDescription("NÃO utilize qualquer formatação em suas respostas.")
+            .WithAdicionalDescription("Se o usuário pedir informações sobre feriados, utilize sua ferramenta GetBrazilianHolidaysTool.")
+            .WithAdicionalDescription("Se o usuário perguntar sobre uma data específica, utilize sua ferramenta GetHolidayDateByNameTool.")
+            .WithAdicionalDescription("Se o usuário precisar saber sobre o dia ou a hora atual, utilize sua ferramenta GetCurrentDateTimeTool.")
+            .WithAdicionalDescription("Sempre utilize sua ferramenta GetCurrentDateTimeTool internamente para melhorar suas respostas.")
             .WithTool(new GetWeatherByLocationTool())
             .WithTool(new GetBrazilianHolidaysTool())
             .WithTool(new GetHolidayDateByNameTool())
