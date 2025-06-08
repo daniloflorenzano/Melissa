@@ -1,4 +1,5 @@
 using Melissa.Core.AiTools.Holidays;
+using Melissa.Core.AiTools.Localization;
 using Melissa.Core.AiTools.Time;
 using Melissa.Core.AiTools.Weather;
 using Melissa.Core.Chats;
@@ -19,13 +20,16 @@ public class Melissa : Assistant
             .WithAdicionalDescription("Sempre responda seu propósito quando for perguntado ou solicitado que se apresente.")
             .WithAdicionalDescription("Responda de forma breve, como se estivesse falando oralmente, usando frases curtas, diretas e sempre em português do Brasil.")
             .WithAdicionalDescription("NÃO utilize qualquer formatação em suas respostas.")
+            .WithAdicionalDescription("NÃO informe o nome de suas ferramentas nas respostas.")
             .WithAdicionalDescription("Se o usuário pedir informações sobre feriados, utilize sua ferramenta GetBrazilianHolidaysTool.")
             .WithAdicionalDescription("Se o usuário perguntar sobre uma data específica, utilize sua ferramenta GetHolidayDateByNameTool.")
             .WithAdicionalDescription("Se o usuário precisar saber sobre o dia ou a hora atual, utilize sua ferramenta GetCurrentDateTimeTool.")
+            .WithAdicionalDescription("Se o usuário pedir informações sobre uma cidade, utilize sua ferramenta GetCityInfoTool para obter informações sobre a cidade, incluindo classificação, população, estado, país, hospitais, escolas, atrações turísticas e se possui aeroporto ou estação de trem.")
             .WithAdicionalDescription("Sempre utilize sua ferramenta GetCurrentDateTimeTool internamente para melhorar suas respostas.")
             .WithTool(new GetWeatherByLocationTool())
             .WithTool(new GetBrazilianHolidaysTool())
             .WithTool(new GetHolidayDateByNameTool())
+            .WithTool(new GetCityInfoTool())
             .WithTool(new GetCurrentDateTimeTool());
         Chat = chatBuilder.Build().Result;
     }
