@@ -10,7 +10,7 @@ public class WeatherOllamaTool
     /// Retorna a previsão do tempo para uma cidade ou estado em uma data específica, informando a temperatura máxima e mínima.
     /// </summary>
     /// <param name="location">Nome da cidade ou estado para o qual se deseja consultar a previsão do tempo. Exemplo: "Porto Real".</param>
-    /// <param name="date">(opcional): Data alvo da previsão, no formato dd/mm/yyyy. Também pode ser uma expressão como "ontem", "amanhã", "depois de amanhã", ou "daqui a x dias".</param>
+    /// <param name="date">(opcional): Data alvo da previsão, no formato dd/mm/yyyy. Também pode ser uma expressão como "ontem", "hoje", "amanhã", "depois de amanhã", ou "daqui a x dias".</param>
     [OllamaTool]
     public static async Task<string> GetWeatherByLocation(string location, [Optional] string date)
     {
@@ -42,6 +42,9 @@ public class WeatherOllamaTool
             
             else if (date.Contains("depois de aman", StringComparison.CurrentCultureIgnoreCase))
                 targetDate = currentSystemDate.AddDays(2);
+            
+            else if (date.Contains("hoje", StringComparison.CurrentCultureIgnoreCase) || date.Contains("atual", StringComparison.CurrentCultureIgnoreCase)|| date.Contains("ontem", StringComparison.CurrentCultureIgnoreCase))
+                targetDate = currentSystemDate;
             
             // Se não for nenhuma das opções acima, tenta formatar a data passada por parâmetro.
             else
