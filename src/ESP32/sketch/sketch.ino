@@ -54,6 +54,9 @@ public:
 #define SERVER_PORT 5179
 #define SERVER_PATH "/melissa/AskMelissaAudio"
 
+// ------- Botao push -----------
+#define BUTTON_PIN 12  // GPIO12
+
 // ------- I2S (Microfone) -------
 #define I2S_MIC_PORT I2S_NUM_1
 #define I2S_SCK_PIN 32  // BCLK
@@ -103,8 +106,15 @@ void setupDAC() {
 }
 
 void sendAudioAndStream() {
-  Serial.println("=== Gravando e enviando áudio de voz ===");
   WiFiClient client;
+
+  Serial.println("=== Pressione o botao para iniciar gravacao ===");
+
+
+  while (digitalRead(BUTTON_PIN) == 1) {
+    delay(10);
+  }
+
   if (!client.connect(SERVER_HOST, SERVER_PORT)) {
     Serial.println("Erro: não conectou ao servidor");
     return;
@@ -116,13 +126,17 @@ void sendAudioAndStream() {
                 "Content-Type: application/octet-stream\r\n"
                 "Connection: close\r\n\r\n",
                 SERVER_PATH, SERVER_HOST);
-  for (int i = 0; i < 100; ++i) {
+
+  Serial.println("=== Gravando ===");
+  while (digitalRead(BUTTON_PIN) == 0) {
     size_t bytesRead = 0;
     i2s_read(I2S_MIC_PORT, i2sBuffer, DMA_BUF_LEN, &bytesRead, portMAX_DELAY);
     if (bytesRead == 0) continue;
     client.printf("%X\r\n", (unsigned int)bytesRead);
     client.write(i2sBuffer, bytesRead);
     client.print("\r\n");
+
+    Serial.print(".");
   }
   client.print("0\r\n\r\n");
   client.flush();
@@ -132,6 +146,9 @@ void sendAudioAndStream() {
     String line = client.readStringUntil('\n');
     if (line.length() <= 1) break;
   }
+
+  Serial.println(" ");
+  Serial.println("=== Gravacao enviada ===");
 
   // Aguarda início do fluxo MP3
   unsigned long start = millis();
@@ -181,6 +198,7 @@ void setup() {
     Serial.print('.');
   }
   Serial.println(" ok");
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
   pinMode(SPEAKER_ENABLE_PIN, OUTPUT);
   setupI2SMic();
   setupDAC();
@@ -188,5 +206,4 @@ void setup() {
 
 void loop() {
   sendAudioAndStream();
-  delay(15000);
 }
