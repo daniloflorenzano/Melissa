@@ -1,4 +1,5 @@
 using Melissa.Core.AiTools.Holidays;
+using Melissa.Core.AiTools.Localization;
 using Melissa.Core.AiTools.Time;
 using Melissa.Core.AiTools.Weather;
 using Melissa.Core.Chats;
@@ -17,6 +18,7 @@ public class Melissa : Assistant
             .WithTool(new GetWeatherByLocationTool())
             .WithTool(new GetBrazilianHolidaysTool())
             .WithTool(new GetHolidayDateByNameTool())
+            .WithTool(new GetCityInfoTool())
             .WithTool(new GetCurrentDateTimeTool());
         Chat = chatBuilder.Build().Result;
     }
