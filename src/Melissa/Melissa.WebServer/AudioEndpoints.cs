@@ -90,9 +90,7 @@ public static class AudioEndpoints
         await edgeTts.Save(replyText, tempMp3File, cancellationToken);
 
         var replyBytes = await File.ReadAllBytesAsync(tempMp3File, cancellationToken);
-        //File.Delete(tempMp3File);
-
-        // return Results.File(replyBytes, contentType: "audio/mpeg");
+        File.Delete(tempMp3File);
   
         return Results.File(
             fileContents: replyBytes,

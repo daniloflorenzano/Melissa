@@ -13,6 +13,9 @@ public class LocalizationOllamaTool
     [OllamaTool]
     public static async Task<string> GetCityInfo(string cityName)
     {
+        if (string.IsNullOrWhiteSpace(cityName))
+            return string.Empty;
+        
         try
         {
             var service = new LocalizationService();
