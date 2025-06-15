@@ -6,11 +6,11 @@ namespace Melissa.Core.AiTools.Holidays;
 public class HolidayOllamaTools
 {
     /// <summary>
-    /// Retorna todos os feriados nacionais, estaduais ou municipais que ocorrem em um determinado mês, considerando o estado e cidade fornecidos. O mês pode ser o nome ("julho") ou o número ("07").
+    /// Retorna todos os feriados nacionais, estaduais ou municipais que ocorrem num determinado mês, considerando o estado e cidade fornecidos. O mês pode ser o nome ou o número.
     /// </summary>
-    /// <param name="city">Nome da cidade (ex: "Resende")</param>
-    /// <param name="state">Sigla do estado (ex: "RJ")</param>
-    /// <param name="month">Nome ou número do mês (ex: "julho" ou "07")</param>
+    /// <param name="city">Nome da cidade</param>
+    /// <param name="state">Sigla do estado</param>
+    /// <param name="month">Nome ou número do mês</param>
     [OllamaTool]
     public static async Task<string> GetBrazilianHolidays(string city, string state, string month)
     {

@@ -41,4 +41,7 @@ var holidaysCsvPath = Path.Combine(
 await DatabaseFeeder.FeedHolidays(holidaysCsvPath);
 
 app.MapHub<MelissaHub>("/melissa");
+
+app.MapPost("/melissa/AskMelissaAudio", AudioEndpoints.AskMelissaAudio);
+
 app.Run();
