@@ -1,9 +1,7 @@
 using Melissa.Core.Assistants;
 using Melissa.Core.ExternalData;
 using Melissa.WebServer;
-using Microsoft.AspNetCore.Mvc;
 using Serilog;
-using MelissaAssistant = Melissa.Core.Assistants.Melissa;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSignalR(options => { options.DisableImplicitFromServicesParameters = true; });
@@ -29,21 +27,8 @@ var holidaysCsvPath = Path.Combine(
 
 await DatabaseFeeder.FeedHolidays(holidaysCsvPath);
 
-//app.MapHub<MelissaHub>("/melissa");
+app.MapHub<MelissaHub>("/melissa");
 
 app.MapPost("/melissa/AskMelissaAudio", AudioEndpoints.AskMelissaAudio);
-
-
-app.MapGet("/melissa", async ([FromServices] MelissaAssistant melissaAssistant) =>
-{
-    var (isAvailable, statusMessage) = await melissaAssistant.CanUse();
-    statusMessage = string.IsNullOrEmpty(statusMessage) ? "Assistente pronta" : statusMessage;
-    
-    return Results.Ok(new
-    {
-        available = isAvailable,
-        message = statusMessage
-    });
-});
 
 app.Run();

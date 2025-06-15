@@ -1,8 +1,7 @@
-using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading.Channels;
 using edge_tts_net;
 using Melissa.Core.Assistants;
+using Melissa.WebServer;
 using Serilog;
 using Whisper.net;
 using Whisper.net.Ggml;
@@ -55,7 +54,8 @@ public static class AudioEndpoints
         var userMessage = transcriptionBuilder.ToString();
         Log.Information("Usuário: {0}", userMessage);
 
-        if (userMessage.Contains("[SILENCIO]", StringComparison.CurrentCultureIgnoreCase))
+        if (userMessage.Contains("[SILENCIO]", StringComparison.CurrentCultureIgnoreCase)
+            || userMessage.Contains("[SILÊNCIO]", StringComparison.CurrentCultureIgnoreCase))
             return Results.Ok("Silêncio detectado, não há resposta da assistente.");
 
         var question = new Question(userMessage, "AudioHub", DateTimeOffset.Now);
@@ -64,7 +64,7 @@ public static class AudioEndpoints
         var (isAvailable, statusMessage) = await melissa.CanUse();
         if (isAvailable)
         {
-            await foreach (var t in SafeAskMelissa(melissa, question, cancellationToken))
+            await foreach (var t in MelissaHub.SafeAskMelissa(melissa, question, cancellationToken))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 replyBuilder.Append(t);
@@ -90,9 +90,16 @@ public static class AudioEndpoints
         await edgeTts.Save(replyText, tempMp3File, cancellationToken);
 
         var replyBytes = await File.ReadAllBytesAsync(tempMp3File, cancellationToken);
-        File.Delete(tempMp3File);
+        //File.Delete(tempMp3File);
 
-        return Results.File(replyBytes, contentType: "audio/mpeg");
+        // return Results.File(replyBytes, contentType: "audio/mpeg");
+  
+        return Results.File(
+            fileContents: replyBytes,
+            contentType:   "audio/mpeg",
+            fileDownloadName: null,
+            enableRangeProcessing: false
+        );
     }
 
     // WAV header generation
@@ -126,40 +133,6 @@ public static class AudioEndpoints
         writer.Write(pcm);
 
         return output.ToArray();
-    }
-
-    private static async IAsyncEnumerable<string> SafeAskMelissa(MelissaAssistant melissa, Question question,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        var channel = Channel.CreateUnbounded<string>();
-
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await foreach (var item in melissa.Ask(question, cancellationToken))
-                {
-                    await channel.Writer.WriteAsync(item, cancellationToken);
-                }
-            }
-            catch (Exception e)
-            {
-                await channel.Writer.WriteAsync(melissa.UnavailabilityMessage, cancellationToken);
-                Log.Error(e, "Resposta da assistente interrompida por uma exceção");
-            }
-            finally
-            {
-                channel.Writer.Complete();
-            }
-        }, cancellationToken);
-
-        while (await channel.Reader.WaitToReadAsync(cancellationToken))
-        {
-            while (channel.Reader.TryRead(out var item))
-            {
-                yield return item;
-            }
-        }
     }
     
     static async Task DownloadModel(string fileName, GgmlType ggmlType)
