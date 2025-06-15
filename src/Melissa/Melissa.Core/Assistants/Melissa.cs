@@ -13,16 +13,7 @@ public class Melissa : Assistant
     public Melissa(IChatBuilder chatBuilder) : base(chatBuilder)
     {
         chatBuilder
-            .WithModelName(ModelName.Llama32_3B)
-            .WithAssistantName(Name)
-            .WithPurposeDescription($"Ser uma assistente pessoal inteligente chamada {Name}, capaz de responder perguntas gerais e usar ferramentas específicas quando necessário.")
-            .WithAdicionalDescription("Sempre responda seu propósito quando for perguntado ou solicitado que se apresente.")
-            .WithAdicionalDescription("Responda de forma breve, como se estivesse falando oralmente, usando frases curtas, diretas e sempre em português do Brasil.")
-            .WithAdicionalDescription("NÃO utilize qualquer formatação em suas respostas.")
-            .WithAdicionalDescription("Se o usuário pedir informações sobre feriados, utilize sua ferramenta GetBrazilianHolidaysTool.")
-            .WithAdicionalDescription("Se o usuário perguntar sobre uma data específica, utilize sua ferramenta GetHolidayDateByNameTool.")
-            .WithAdicionalDescription("Se o usuário precisar saber sobre o dia ou a hora atual, utilize sua ferramenta GetCurrentDateTimeTool.")
-            .WithAdicionalDescription("Sempre utilize sua ferramenta GetCurrentDateTimeTool internamente para melhorar suas respostas.")
+            .WithModelName(ModelName.Melissa)
             .WithTool(new GetWeatherByLocationTool())
             .WithTool(new GetBrazilianHolidaysTool())
             .WithTool(new GetHolidayDateByNameTool())

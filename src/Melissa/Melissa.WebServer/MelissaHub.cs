@@ -151,7 +151,7 @@ public class MelissaHub : Hub
         await modelStream.CopyToAsync(fileWriter);
     }
 
-    private async IAsyncEnumerable<string> SafeAskMelissa(MelissaAssistant melissa, Question question,
+    public static async IAsyncEnumerable<string> SafeAskMelissa(MelissaAssistant melissa, Question question,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var channel = Channel.CreateUnbounded<string>();

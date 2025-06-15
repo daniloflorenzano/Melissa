@@ -27,7 +27,7 @@ public class OllamaChatBuilder : IChatBuilder
             ollama.SelectedModel = modelName;
 
             var availableModels = await ollama.ListLocalModelsAsync();
-            var isSelectedModelAvailable = availableModels.Any(m => m.Name == modelName);
+            var isSelectedModelAvailable = availableModels.Any(m => m.Name.Equals(m.Name, StringComparison.OrdinalIgnoreCase));
 
             if (!isSelectedModelAvailable)
             {
