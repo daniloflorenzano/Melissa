@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Channels;
 using edge_tts_net;
 using Melissa.Core.Assistants;
+using Melissa.Core.ExternalData;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Serilog;
@@ -155,13 +156,16 @@ public class MelissaHub : Hub
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var channel = Channel.CreateUnbounded<string>();
-
+        var historyData = new DbConversationHistory();
+        historyData.Pergunta = question.Text;
+        
         _ = Task.Run(async () =>
         {
             try
             {
                 await foreach (var item in melissa.Ask(question, cancellationToken))
                 {
+                    historyData.Resposta += item;
                     await channel.Writer.WriteAsync(item, cancellationToken);
                 }
             }
@@ -173,6 +177,7 @@ public class MelissaHub : Hub
             finally
             {
                 channel.Writer.Complete();
+                await DatabaseFeeder.FeedHistoryData(historyData);
             }
         }, cancellationToken);
 
