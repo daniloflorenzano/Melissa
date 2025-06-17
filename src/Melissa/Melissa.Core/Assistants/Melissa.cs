@@ -3,6 +3,7 @@ using Melissa.Core.AiTools.Localization;
 using Melissa.Core.AiTools.Time;
 using Melissa.Core.AiTools.Weather;
 using Melissa.Core.Chats;
+using Melissa.WebServer;
 
 namespace Melissa.Core.Assistants;
 
@@ -15,11 +16,12 @@ public class Melissa : Assistant
     {
         chatBuilder
             .WithModelName(ModelName.Melissa)
-            .WithTool(new GetWeatherByLocationTool())
+            .WithTool(new GetCurrentTemperatureByLocationTool())
             .WithTool(new GetBrazilianHolidaysTool())
             .WithTool(new GetHolidayDateByNameTool())
             .WithTool(new GetCityInfoTool())
-            .WithTool(new GetCurrentDateTimeTool());
+            .WithTool(new GetCurrentDateTimeTool())
+            .WithTool(new SendEmailConversationHistoryByPeriodTool());
         Chat = chatBuilder.Build().Result;
     }
 }

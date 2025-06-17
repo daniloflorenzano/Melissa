@@ -2,6 +2,8 @@ using System.Globalization;
 using CsvHelper;
 using CsvHelper.Configuration;
 using Melissa.Core.AiTools.Holidays;
+using Melissa.WebServer;
+using Microsoft.EntityFrameworkCore;
 
 namespace Melissa.Core.ExternalData;
 
@@ -29,7 +31,7 @@ public static class DatabaseFeeder
             var holidays = csv.GetRecords<Holiday>().ToList();
             var nationals = holidays.Where(h => h.Type == HolidayType.National).ToList();
             var duplicatesToRemove = new List<Holiday>();
-            
+
             Parallel.ForEach(holidays, holiday =>
             {
                 // remove nacionais duplicados nas cidades
@@ -39,7 +41,7 @@ public static class DatabaseFeeder
                     duplicatesToRemove.Add(holiday);
                     return;
                 }
-                
+
                 if (string.IsNullOrEmpty(holiday.State))
                     return;
 
@@ -87,6 +89,29 @@ public static class DatabaseFeeder
             throw;
         }
     }
+
+    public static async Task FeedHistoryData(DbConversationHistory conversationHistory)
+    {
+        await using var context = new AppDbContext();
+        
+        await context.Database.EnsureCreatedAsync();
+        
+        conversationHistory.Data = DateTime.Now;
+        await context.AddAsync(conversationHistory);
+        
+        await context.SaveChangesAsync();
+    }
+    
+    public static async Task<List<DbConversationHistory>> GetHistoryAsync()
+    {
+        await using var context = new AppDbContext();
+
+        var historyList = await context.DbHistoryData
+            .OrderByDescending(h => h.Data)
+            .ToListAsync();
+
+        return historyList;
+    }
 }
 
 internal sealed class HolidayMap : ClassMap<Holiday>
@@ -101,3 +126,4 @@ internal sealed class HolidayMap : ClassMap<Holiday>
         Map(h => h.IsOptional).Name("IsOptional");
     }
 }
+
