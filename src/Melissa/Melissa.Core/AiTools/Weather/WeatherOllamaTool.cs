@@ -7,7 +7,7 @@ namespace Melissa.Core.AiTools.Weather;
 public class WeatherOllamaTool
 {
     /// <summary>
-    /// Retorna a temperatura atual de uma determinada cidade. Ex: A temperatura atual é de 18°C.
+    /// Retorna a temperatura atual de uma determinada cidade.
     /// </summary>
     /// <param name="location">Nome da cidade para o qual se deseja consultar o clima. Exemplo: "Porto Real".</param>
     [OllamaTool]

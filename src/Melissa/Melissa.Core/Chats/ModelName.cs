@@ -6,6 +6,7 @@ namespace Melissa.Core.Chats;
 
 public enum ModelName
 {
+    Melissa,
     [Description("llama3.2:1b")]
     Llama32_1B,
     
