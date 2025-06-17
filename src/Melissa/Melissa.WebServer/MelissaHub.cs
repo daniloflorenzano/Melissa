@@ -68,21 +68,14 @@ public class MelissaHub : Hub
         Log.Information("Usuário: {0}", message);
         
         var question = new Question(message, "AudioHub", DateTimeOffset.Now);
-        var replyBuilder = new StringBuilder();
-
+        string melissaReply;
         var (isAvailable, statusMessage) = await melissa.CanUse();
+        
         if (isAvailable)
-        {
-            await foreach (var t in SafeAskMelissa(melissa, question, cancellationToken))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                replyBuilder.Append(t);
-            }   
-        }
+            melissaReply = await MelissaHub.SafeAskMelissaWithErrorHandlingAndRetry(melissa, question, cancellationToken);
         else
-        {
-            replyBuilder.Append(statusMessage);
-        }
+            melissaReply = statusMessage;
+
         
         var edgeTts = new EdgeTTSNet();
     
@@ -99,10 +92,9 @@ public class MelissaHub : Hub
         var tempMp3File = Path.GetTempPath() + "temp.mp3";
         edgeTts = new EdgeTTSNet(options);
         
-        var reply = replyBuilder.ToString();
-        Log.Information("Assistente: {0}", reply);
+        Log.Information("Assistente: {0}", melissaReply);
         
-        await edgeTts.Save(reply, tempMp3File, cancellationToken);
+        await edgeTts.Save(melissaReply, tempMp3File, cancellationToken);
         
         var replyBytes = await File.ReadAllBytesAsync(tempMp3File, cancellationToken);
         File.Delete(tempMp3File);
@@ -187,6 +179,48 @@ public class MelissaHub : Hub
             {
                 yield return item;
             }
+        }
+    }
+    
+    public static async Task<string> SafeAskMelissaWithErrorHandlingAndRetry(MelissaAssistant melissa, Question question,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var tryCount = 0;
+
+            while (tryCount < 3)
+            {
+                tryCount++;
+                
+                var replyBuilder = new StringBuilder();
+                await foreach (var item in SafeAskMelissa(melissa, question, cancellationToken))
+                {
+                    replyBuilder.Append(item);
+                }
+                var reply = replyBuilder.ToString();
+
+                if (string.IsNullOrWhiteSpace(reply))
+                {
+                    Log.Warning("Resposta da assistente está vazia, reiniciando o chat e tentando novamente...");
+                    melissa.ResetChat();
+                }
+
+                if (reply.StartsWith('{'))
+                {
+                    Log.Warning("Resposta da assistente provavelmente é um JSON, repetindo a pergunta...: {0}", reply);
+                    continue;
+                }
+                
+                return reply;
+            }
+
+            return melissa.UnavailabilityMessage;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Erro ao perguntar a assistente Melissa");
+            return melissa.UnavailabilityMessage;
         }
     }
 }

@@ -12,7 +12,7 @@ public class HolidayOllamaTools
     /// <param name="state">Sigla do estado</param>
     /// <param name="month">Nome ou número do mês</param>
     [OllamaTool]
-    public static async Task<string> GetBrazilianHolidays(string city, string state, string month)
+    public static async Task<string> GetBrazilianHolidays(string city, string state = "", string month = "")
     {
         var service = new HolidayService();
         var holidays = await service.GetHolidaysAsync(city, state, month);

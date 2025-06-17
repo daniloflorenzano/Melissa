@@ -59,21 +59,14 @@ public static class AudioEndpoints
             return Results.Ok("Silêncio detectado, não há resposta da assistente.");
 
         var question = new Question(userMessage, "AudioHub", DateTimeOffset.Now);
-        var replyBuilder = new StringBuilder();
 
+        string melissaReply;
         var (isAvailable, statusMessage) = await melissa.CanUse();
+        
         if (isAvailable)
-        {
-            await foreach (var t in MelissaHub.SafeAskMelissa(melissa, question, cancellationToken))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                replyBuilder.Append(t);
-            }
-        }
+            melissaReply = await MelissaHub.SafeAskMelissaWithErrorHandlingAndRetry(melissa, question, cancellationToken);
         else
-        {
-            replyBuilder.Append(statusMessage);
-        }
+            melissaReply = statusMessage;
 
         // Síntese com EdgeTTS
         var edgeTts = new EdgeTTSNet();
@@ -83,11 +76,11 @@ public static class AudioEndpoints
         var ttsOptions = new TTSOption(ptVoice.Name, "+0Hz", "+25%", "+0%");
         edgeTts = new EdgeTTSNet(ttsOptions);
 
-        var replyText = replyBuilder.ToString();
-        Log.Information("Assistente: {0}", replyText);
+        
+        Log.Information("Assistente: {0}", melissaReply);
 
         var tempMp3File = Path.Combine(Path.GetTempPath(), "reply.mp3");
-        await edgeTts.Save(replyText, tempMp3File, cancellationToken);
+        await edgeTts.Save(melissaReply, tempMp3File, cancellationToken);
 
         var replyBytes = await File.ReadAllBytesAsync(tempMp3File, cancellationToken);
         File.Delete(tempMp3File);

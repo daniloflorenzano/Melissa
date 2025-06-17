@@ -12,6 +12,8 @@ public class Melissa : Assistant
     public sealed override string Name => nameof(Melissa);
     public sealed override string UnavailabilityMessage => "Desculpe, parece que não consigo te responder no momento. Por favor, confira se o Ollama está em execução.";
     
+    private readonly IChatBuilder _chatBuilder;
+    
     public Melissa(IChatBuilder chatBuilder) : base(chatBuilder)
     {
         chatBuilder
@@ -23,5 +25,12 @@ public class Melissa : Assistant
             .WithTool(new GetCurrentDateTimeTool())
             .WithTool(new SendEmailConversationHistoryByPeriodTool());
         Chat = chatBuilder.Build().Result;
+        
+        _chatBuilder = chatBuilder;
+    }
+    
+    public void ResetChat()
+    {
+        Chat = _chatBuilder.Build().Result;
     }
 }
