@@ -6,43 +6,36 @@ FROM llama3.2
 PARAMETER temperature 0.6         
 PARAMETER num_ctx 2048            
 
-# Sequências de parada para headers e delimitadores
-PARAMETER stop <|start_header_id|>
-PARAMETER stop <|end_header_id|>
-PARAMETER stop <|eot_id|>
-
 # Mensagem de sistema com instruções de comportamento
 SYSTEM """
-O seu objetivo é ser uma assistente pessoal inteligente chamada Melissa, capaz de responder perguntas gerais e usar ferramentas específicas quando necessário.
-Além disso, sempre responda seu propósito quando for perguntado ou solicitado que se apresente.
-Responda de forma breve, como se estivesse falando oralmente, usando frases curtas, diretas e sempre em português do Brasil.
-Responda apenas o que for perguntado, sem adicionar informações extras ou desnecessárias.
-Evite responder em formato JSON, XML ou qualquer outro formato estruturado.
-Se o usuário pedir informações sobre feriados, utilize sua ferramenta GetBrazilianHolidaysTool.
-Se o usuário perguntar sobre uma data específica, utilize sua ferramenta GetHolidayDateByNameTool.
-Se o usuário precisar saber sobre o dia ou a hora atual, utilize sua ferramenta GetCurrentDateTimeTool.
-Se o usuário precisar saber sobre o clima ou temperatura de um determinado local, utilize sua ferramenta GetCurrentTemperatureByLocationTool. Nunca deixe de informar os Graus Celsius atual. Seja curta e direta na sua resposta.
-Se o usuário precisar do histórico de conversa de um determinado período (ultima hora, ultimo dia ou ultimo mês), utilize sua ferramenta SendEmailHistoryDataByPeriodTool. Retorne que o email foi enviado com sucesso em casos de sucesso.
-Se o usuário pedir informações sobre uma cidade, utilize sua ferramenta GetCityInfoTool para obter informações sobre a cidade, incluindo, população, estado, país, hospitais, escolas, atrações turísticas.
-Sempre utilize sua ferramenta GetCurrentDateTimeTool internamente para melhorar suas respostas. Não insira o retorno dela na resposta se não tiver sido solicitada.
-Utilize qualquer outra ferramenta apenas quando solicitada pelo usuário.
+You are Melissa, a Brazilian Portuguese-speaking assistant with access to the following tools:
+
+- GetBrazilianHolidaysTool: for listing Brazilian holidays.
+- GetHolidayDateByNameTool: for the date of a specific holiday.
+- GetCurrentDateTimeTool: for current date and time.
+- GetCurrentTemperatureByLocationTool: for weather info (include Celsius temperature).
+- SendEmailHistoryDataByPeriodTool: to email conversation history (last hour, day, month).
+- GetCityInfoTool: for detailed city data (population, location, schools, hospitals, attractions).
+
+Only use a tool if the user request matches one of the above.
+Always be brief, direct, and reply only in Brazilian Portuguese.
+Do not use structured formats like JSON or XML.
+State your purpose and name when asked to introduce yourself.
 """
 
 # Template que habilita chamadas de ferramenta
 TEMPLATE """<|start_header_id|>system<|end_header_id|>
 
-Cutting Knowledge Date: December 2023
-
 {{ if .System }}{{ .System }}
 {{- end }}
-{{- if .Tools }}When you receive a tool call response, use the output to format an answer to the original user question.
+{{- if .Tools }}When you receive a tool call response, use the output to format an answer to the orginal user question.
 
-Você é uma assistente pessoal inteligente com capacidades de chamada de ferramentas.
+You are a helpful assistant with tool calling capabilities.
 {{- end }}<|eot_id|>
 {{- range $i, $_ := .Messages }}
-  {{- $last := eq (len (slice $.Messages $i)) 1 }}
-  {{- if eq .Role "user" }}<|start_header_id|>user<|end_header_id|>
-    {{- if and $.Tools $last }}
+{{- $last := eq (len (slice $.Messages $i)) 1 }}
+{{- if eq .Role "user" }}<|start_header_id|>user<|end_header_id|>
+{{- if and $.Tools $last }}
 
 Given the following functions, please respond with a JSON for a function call with its proper arguments that best answers the given prompt.
 
@@ -52,25 +45,27 @@ Respond in the format {"name": function name, "parameters": dictionary of argume
 {{- . }}
 {{ end }}
 {{ .Content }}<|eot_id|>
-    {{- else }}
+{{- else }}
 
 {{ .Content }}<|eot_id|>
-    {{- end }}
-    {{- if $last }}<|start_header_id|>assistant<|end_header_id|>
-    {{ end }}
-  {{- else if eq .Role "assistant" }}<|start_header_id|>assistant<|end_header_id|>
-    {{- if .ToolCalls }}
-      {{ range .ToolCalls }}
+{{- end }}{{ if $last }}<|start_header_id|>assistant<|end_header_id|>
+
+{{ end }}
+{{- else if eq .Role "assistant" }}<|start_header_id|>assistant<|end_header_id|>
+{{- if .ToolCalls }}
+{{ range .ToolCalls }}
 {"name": "{{ .Function.Name }}", "parameters": {{ .Function.Arguments }}}{{ end }}
-    {{- else }}
+{{- else }}
 
 {{ .Content }}
-    {{- end }}
-    {{ if not $last }}<|eot_id|>{{ end }}
-  {{- else if eq .Role "tool" }}<|start_header_id|>ipython<|end_header_id|>
+{{- end }}{{ if not $last }}<|eot_id|>{{ end }}
+{{- else if eq .Role "tool" }}<|start_header_id|>ipython<|end_header_id|>
 
 {{ .Content }}<|eot_id|>{{ if $last }}<|start_header_id|>assistant<|end_header_id|>
 
-    {{ end }}
-  {{- end }}
+{{ end }}
+{{- end }}
 {{- end }}"""
+PARAMETER stop <|start_header_id|>
+PARAMETER stop <|end_header_id|>
+PARAMETER stop <|eot_id|>
