@@ -10,14 +10,6 @@ function hideRecordingPrompt() {
     if (prompt) prompt.style.display = "none";
 }
 
-// Escuta mensagens do background
-browser.runtime.onMessage.addListener((message) => {
-    console.log("Mensagem recebida no popup:", message);
-    if (message.action === "meetingStarted") {
-        showRecordingPrompt();
-    }
-});
-
 // Ao abrir o popup, pede o estado atual da reunião
 (async () => {
     const response = await browser.runtime.sendMessage({ action: "getMeetingStatus" });
@@ -38,3 +30,5 @@ document.getElementById("startBtn").addEventListener("click", async () => {
 document.getElementById("cancelBtn").addEventListener("click", () => {
     window.close();
 });
+
+
