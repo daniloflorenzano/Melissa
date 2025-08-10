@@ -2,6 +2,7 @@ using Melissa.Core.AiTools.Holidays;
 using Melissa.Core.AiTools.Localization;
 using Melissa.Core.AiTools.Time;
 using Melissa.Core.AiTools.Weather;
+using Melissa.Core.AiTools.TaskList;
 using Melissa.Core.Chats;
 using Melissa.WebServer;
 
@@ -23,6 +24,9 @@ public class Melissa : Assistant
             .WithTool(new GetHolidayDateByNameTool())
             .WithTool(new GetCityInfoTool())
             .WithTool(new GetCurrentDateTimeTool())
+            .WithTool(new CreateNewTaskTool())
+            .WithTool(new AddNewItemOnListTool())
+            .WithTool(new GetAllTasksTool())
             .WithTool(new SendEmailConversationHistoryByPeriodTool());
         Chat = chatBuilder.Build().Result;
         
