@@ -60,6 +60,39 @@ public class TaskListService
             throw;
         }
     }
+    
+    /// <summary>
+    /// Lista todas as tarefas registradas.
+    /// </summary>
+    /// <returns></returns>
+    public async Task<Tasks> GetTaskByName(string taskName)
+    {
+        Tasks taskResult = new Tasks();
+        
+        try
+        {
+            var task = await _dbContext.Tasks.Where(c => c.Title == taskName).ToListAsync();
+
+            if (task.Any())
+            {
+                taskResult = new Tasks()
+                {
+                    Id = task.Select(t => t.Id).Max(),
+                    Title = task.Select(t => t.Title).Max(),
+                    Description = task.Select(t => t.Description).Max(),
+                    IncludedAt = task.Select(t => t.IncludedAt).Max()
+                };
+            }
+            
+            return taskResult;
+            
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
 
     /// <summary>
     /// Lista os itens de uma tarefa específica pelo ID.

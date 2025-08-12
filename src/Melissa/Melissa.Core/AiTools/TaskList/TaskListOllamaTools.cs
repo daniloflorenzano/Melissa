@@ -76,4 +76,36 @@ public class TaskListOllamaTools
 
         return sb.ToString();
     }
+    
+    /// <summary>
+    /// Lista os itens de uma tarefa específica.
+    /// </summary>
+    /// <param name="taskName"></param>
+    /// <returns>Retorna todos os itens de uma Tarefa</returns>
+    [OllamaTool]
+    public static async Task<string> GetAllTasksItens(string taskName)
+    {
+        var taskServive = new TaskListService();
+        
+        Tasks task = await taskServive.GetTaskByName(taskName);
+        
+        if (task.Id == 0)
+            return $"Nenhum item encontrado para a Tarefa {taskName}.";
+        
+        List<TaskItens> taskItems = await taskServive.GetTaskItensByTaskId(task.Id);
+        
+        var sb = new StringBuilder();
+        sb.AppendLine("Itens:");
+        sb.AppendLine("-----------------");
+
+        foreach (var item in taskItems)
+        {
+            sb.AppendLine($"Descrição: {item.Description}");
+            sb.AppendLine($"Data de criação: {item.IncludedAt:dd/MM/yyyy HH:mm}");
+            sb.AppendLine($"Completado em: {(item.IsCompleted ? item.CompletedAt.ToString("dd/MM/yyyy HH:mm") : "Não completado")}");
+            sb.AppendLine();
+        }
+
+        return sb.ToString();
+    }
 }
