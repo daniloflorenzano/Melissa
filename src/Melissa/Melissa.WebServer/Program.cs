@@ -22,12 +22,10 @@ if (string.IsNullOrEmpty(allUNeedApiBaseAddress))
     throw new InvalidOperationException("AllUNeedApiBaseAddress não está configurado.");
 
 var allUNeedApiKey = builder.Configuration.GetValue<string>("AllUNeedApiKey");
-if (string.IsNullOrEmpty(allUNeedApiKey))
-    throw new InvalidOperationException("AllUNeedApiKey não está configurado.");
 
 var allUNeedApiOptions = AllUNeedApiOptions.GetInstance();
 allUNeedApiOptions.BaseAddress = allUNeedApiBaseAddress;
-allUNeedApiOptions.ApiKey = allUNeedApiKey;
+allUNeedApiOptions.ApiKey = allUNeedApiKey ?? string.Empty;
 
 var app = builder.Build();
 

@@ -1,5 +1,6 @@
 using System.Text;
 using OllamaSharp;
+using Serilog;
 
 namespace Melissa.Core.AiTools.Holidays;
 
@@ -14,10 +15,15 @@ public class HolidayOllamaTools
     [OllamaTool]
     public static async Task<string> GetBrazilianHolidays(string city, string state = "", string month = "")
     {
+        Log.Information("Executando a ferramenta GetBrazilianHolidays com os parâmetros: City={City}, State={State}, Month={Month}", city, state, month);
+        
         var service = new HolidayService();
         var holidays = await service.GetHolidaysAsync(city, state, month);
         if (holidays.Count == 0)
+        {
+            Log.Information("Nenhum feriado encontrado para os parâmetros");
             return "Nenhum feriado encontrado.";
+        }
 
         var strBuilder = new StringBuilder();
         strBuilder.AppendLine("Feriados encontrados:");
@@ -28,6 +34,8 @@ public class HolidayOllamaTools
             else
                 strBuilder.AppendLine($"{holiday.Date.ToString("dd/MM/yyyy")} - {holiday.Description}");
         }
+        
+        Log.Information("Feriados encontrados: {Holidays}", strBuilder.ToString());
 
         return strBuilder.ToString();
     }

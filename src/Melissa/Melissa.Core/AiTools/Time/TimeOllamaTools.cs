@@ -1,5 +1,6 @@
 using System.Globalization;
 using OllamaSharp;
+using Serilog;
 
 namespace Melissa.Core.AiTools.Time;
 
@@ -12,6 +13,9 @@ public class TimeOllamaTools
     [OllamaTool]
     public static string GetCurrentDateTime()
     {
-        return DateTime.Now.ToString("F", new CultureInfo("pt-BR"));
+        Log.Information("Executando a ferramenta GetCurrentDateTime");
+        var res = DateTime.Now.ToString("F", new CultureInfo("pt-BR"));
+        Log.Information("Data e hora atual retornada: {CurrentDateTime}", res); 
+        return res;
     }
 }
