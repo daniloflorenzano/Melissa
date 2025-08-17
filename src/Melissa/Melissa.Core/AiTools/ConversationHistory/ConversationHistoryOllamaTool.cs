@@ -6,6 +6,7 @@ using Melissa.Core.ExternalData;
 using Melissa.WebServer.Email;
 using Microsoft.EntityFrameworkCore;
 using OllamaSharp;
+using Serilog;
 
 namespace Melissa.WebServer;
 
@@ -18,6 +19,8 @@ public class ConversationHistoryOllamaTool
     [OllamaTool]
     public static async Task<string> SendEmailConversationHistoryByPeriod(string period)
     {
+        Log.Information("Executando a ferramenta SendEmailConversationHistoryByPeriod com o período: {Period}", period);
+        
         ConversationHistoryService conversationHistoryService = new ConversationHistoryService();
         await using var context = new AppDbContext();
 

@@ -13,6 +13,8 @@ public class LocalizationOllamaTool
     [OllamaTool]
     public static async Task<string> GetCityInfo(string cityName)
     {
+        Log.Information("Executando a ferramenta GetCityInfo com o nome da cidade: {CityName}", cityName);
+        
         if (string.IsNullOrWhiteSpace(cityName))
             return string.Empty;
         
@@ -24,7 +26,7 @@ public class LocalizationOllamaTool
             if (cityInfo is null)
                 return "Nenhuma informação encontrada para a cidade informada.";
 
-            return $"Cidade: {cityInfo.Name}\n" +
+            var res = $"Cidade: {cityInfo.Name}\n" +
                    $"Classificação: {cityInfo.Classification}\n" +
                    $"População: {cityInfo.Population}\n" +
                    $"Estado: {cityInfo.State}\n" +
@@ -33,6 +35,9 @@ public class LocalizationOllamaTool
                    $"Escolas: {string.Join(", ", cityInfo.Schools)}\n" +
                    $"Atrações Turísticas: {string.Join(", ", cityInfo.TouristAttractions)}\n" +
                    $"Possui Aeroporto ou Estação de Trem: {cityInfo.HasAirportOrTrainStation}";
+            
+            Log.Information("Informações da cidade obtidas com sucesso: {CityInfo}", res);
+            return res;
         }
         catch (Exception e)
         {

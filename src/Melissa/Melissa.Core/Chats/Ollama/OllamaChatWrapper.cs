@@ -6,6 +6,8 @@ public class OllamaChatWrapper(Chat ollamaChat, List<object> tools) : IChat
 {
     public IAsyncEnumerable<string> SendAsync(string message, CancellationToken cancellationToken = default)
     {
+        ollamaChat.Think = false;
+        
         return tools.Count == 0 
             ? ollamaChat.SendAsync(message, cancellationToken) 
             : ollamaChat.SendAsync(message, tools: tools, cancellationToken: cancellationToken);
