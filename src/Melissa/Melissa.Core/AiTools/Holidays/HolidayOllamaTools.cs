@@ -20,7 +20,10 @@ public class HolidayOllamaTools
         var service = new HolidayService();
         var holidays = await service.GetHolidaysAsync(city, state, month);
         if (holidays.Count == 0)
+        {
+            Log.Information("Nenhum feriado encontrado para os parâmetros");
             return "Nenhum feriado encontrado.";
+        }
 
         var strBuilder = new StringBuilder();
         strBuilder.AppendLine("Feriados encontrados:");
