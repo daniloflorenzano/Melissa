@@ -12,9 +12,23 @@
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-        <vm:MainWindowViewModel/>
+        <vm:MainWindowViewModel />
     </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
+    <StackPanel>
+        <Button
+            x:Name="MicButton"
+            Width="500"
+            Height="500"
+            CornerRadius="250"
+            FontSize="100"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Content="🎙️"
+            Background="GreenYellow"
+            PointerPressed="OnMicButtonPressed"
+            PointerReleased="OnMicButtonReleased" />
+    </StackPanel>
+    
 </Window>
