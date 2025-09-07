@@ -88,18 +88,29 @@ public class MelissaHub : Hub
             rate: "+25%",
             volume: "+0%"
         );
-
-        var tempMp3File = Path.GetTempPath() + "temp.mp3";
-        edgeTts = new EdgeTTSNet(options);
         
         Log.Information("Assistente: {0}", melissaReply);
         
-        await edgeTts.Save(melissaReply, tempMp3File, cancellationToken);
+        var tempFilePath = Path.Combine(Path.GetTempPath(), "temp.mp3");
+        var fs = new FileStream(tempFilePath, FileMode.Create);
+
+        edgeTts = new EdgeTTSNet(options);
+        await edgeTts.TTS(melissaReply, (metaObj) =>
+        {
+            if (metaObj.Type == TTSMetadataType.Audio)
+            {
+                fs.Write(metaObj.Data);
+            }
+        }, cancellationToken);
+
+        var fsAsWav = await AudioConverter.ConvertMp3StreamToWavAsync(fs, cancellationToken);
         
-        var replyBytes = await File.ReadAllBytesAsync(tempMp3File, cancellationToken);
-        File.Delete(tempMp3File);
+        await fs.FlushAsync(cancellationToken);
+        await fs.DisposeAsync();
         
-        yield return replyBytes;
+        File.Delete(tempFilePath);
+
+        yield return fsAsWav;
     }
     
     private static byte[] GenerateWav(byte[] pcmData, int sampleRate = 16000, short bitsPerSample = 16, short channels = 1)
