@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
@@ -45,10 +44,6 @@ public partial class MainWindowViewModel : ViewModelBase
             SingleWriter = false
         });
 
-        //var audioPlayer = new AudioPlayer();
-        var receivedAudioFile = Path.Combine(Path.GetTempPath(), "received_audio.wav");
-        
-
         // Inicia task de envio/recepção
         _ = Task.Run(async () =>
         {
@@ -59,20 +54,17 @@ public partial class MainWindowViewModel : ViewModelBase
                 CancellationToken.None
             );
 
-            await foreach (var replyBytes in stream)
-            {
-                Console.WriteLine($"[RECV] Recebido {replyBytes.Length} bytes do servidor.");
-                
-                await using var fileStream = new FileStream(receivedAudioFile, FileMode.Create, FileAccess.Write);
-                await fileStream.WriteAsync(replyBytes);
-            }
-
-            Console.WriteLine($"[INFO] Áudio recebido salvo em: {receivedAudioFile}");
+            var pipe = new System.IO.Pipelines.Pipe();
             
-            var player = new NetCoreAudio.Player();
-            await player.Play(receivedAudioFile);
-
-            File.Delete(receivedAudioFile);
+            _ = Task.Run(async () =>
+            {
+                await foreach (var replyBytes in stream) 
+                    await pipe.Writer.WriteAsync(replyBytes);
+                
+                await pipe.Writer.CompleteAsync();
+            });
+            
+            await Mpg123Wrapper.PlayAudioFromStreamAsync(pipe.Reader.AsStream());
         });
 
         PortAudio.Initialize();
