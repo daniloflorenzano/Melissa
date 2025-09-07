@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -8,138 +9,113 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.AspNetCore.SignalR.Client;
 using PortAudioSharp;
-using LibVLCSharp.Shared;
+using Stream = PortAudioSharp.Stream;
 
 namespace Melissa.DesktopAvaloniaClient.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    public string Greeting { get; } = "Fale com a Melissa!";
     private const string MelissaServerUrl = "http://localhost:5179";
-
-    public MainWindowViewModel()
-    {
-        _callback = CallbackImpl;
-        Core.Initialize();
-        _libVLC = new LibVLC();
-    }
 
     private HubConnection? _hubConnection;
     private Channel<byte[]>? _audioChannel;
-    private GCHandle? _audioChannelHandle;
-    private readonly PortAudioSharp.Stream.Callback _callback;
-    private PortAudioSharp.Stream? _audioStream;
-    private LibVLC _libVLC;
+    private readonly Stream.Callback _inputCallback;
+    private Stream? _inputStream;
+
+    public MainWindowViewModel()
+    {
+        _inputCallback = InputCallbackImpl;
+    }
 
     [RelayCommand]
     public async Task StartAudioCaptureAsync()
     {
+        Console.WriteLine("[INFO] Iniciando captura de áudio e conexão com servidor...");
+
         _hubConnection = new HubConnectionBuilder()
             .WithUrl($"{MelissaServerUrl}/melissa")
             .Build();
 
         await _hubConnection.StartAsync();
+        Console.WriteLine("[INFO] Conexão com SignalR iniciada.");
 
-        _audioChannel = Channel.CreateUnbounded<byte[]>();
-        Console.WriteLine($"Canal criado: {_audioChannel.GetHashCode()}");
+        _audioChannel = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions
+        {
+            SingleReader = true,
+            SingleWriter = false
+        });
 
-        // Inicia o envio dos blocos para o Hub
+        var audioPlayer = new AudioPlayer();
+        var receivedAudioFile = Path.Combine(Path.GetTempPath(), "received_audio.wav");
+        
+
+        // Inicia task de envio/recepção
         _ = Task.Run(async () =>
         {
+            Console.WriteLine("[INFO] Iniciando task de envio/recepção de áudio...");
             var stream = _hubConnection.StreamAsync<byte[]>(
                 "AskMelissaAudio",
                 GetAudioStream(),
                 CancellationToken.None
             );
 
+            audioPlayer.StartPlayback();
             await foreach (var replyBytes in stream)
             {
-                var wavBytes = AddWavHeader(replyBytes);
-                using var ms = new MemoryStream(wavBytes);
-                using var mediaInput = new StreamMediaInput(ms);
-                using var media = new Media(_libVLC, mediaInput);
-                using var mediaPlayer = new MediaPlayer(media);
-                mediaPlayer.Play();
+                Console.WriteLine($"[RECV] Recebido {replyBytes.Length} bytes do servidor.");
+
+                // Salva os dados recebidos no arquivo
+                await using var fileStream = new FileStream(receivedAudioFile, FileMode.Create, FileAccess.Write);
+                await fileStream.WriteAsync(replyBytes);
+
+                // Adiciona os dados ao player
+                audioPlayer.AddAudioData(replyBytes);
             }
+
+            audioPlayer.StopPlayback();
+            Console.WriteLine($"[INFO] Áudio recebido salvo em: {receivedAudioFile}");
         });
 
         PortAudio.Initialize();
-        StartStream();
-    }
-    
-    private static byte[] AddWavHeader(byte[] pcmData, int sampleRate = 16000, short channels = 1, short bitsPerSample = 16)
-    {
-        int byteRate = sampleRate * channels * bitsPerSample / 8;
-        int blockAlign = (short)(channels * bitsPerSample / 8);
-        int subChunk2Size = pcmData.Length;
-        int chunkSize = 36 + subChunk2Size;
-
-        using var ms = new MemoryStream();
-        using var bw = new BinaryWriter(ms);
-
-        // RIFF header
-        bw.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));
-        bw.Write(chunkSize);
-        bw.Write(System.Text.Encoding.ASCII.GetBytes("WAVE"));
-
-        // fmt subchunk
-        bw.Write(System.Text.Encoding.ASCII.GetBytes("fmt "));
-        bw.Write(16); // Subchunk1Size for PCM
-        bw.Write((short)1); // AudioFormat PCM
-        bw.Write(channels);
-        bw.Write(sampleRate);
-        bw.Write(byteRate);
-        bw.Write(blockAlign);
-        bw.Write(bitsPerSample);
-
-        // data subchunk
-        bw.Write(System.Text.Encoding.ASCII.GetBytes("data"));
-        bw.Write(subChunk2Size);
-        bw.Write(pcmData);
-
-        return ms.ToArray();
+        StartInputStream();
     }
 
     private async IAsyncEnumerable<byte[]> GetAudioStream()
     {
-        while (_audioChannel != null && await _audioChannel.Reader.WaitToReadAsync())
+        if (_audioChannel is null) yield break;
+
+        Console.WriteLine("[INFO] Aguardando buffers de áudio para envio...");
+        while (await _audioChannel.Reader.WaitToReadAsync())
         {
             while (_audioChannel.Reader.TryRead(out var buffer))
             {
                 yield return buffer;
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
     }
 
-    private StreamCallbackResult CallbackImpl(
+    private StreamCallbackResult InputCallbackImpl(
         IntPtr input, IntPtr output, uint frameCount,
         ref StreamCallbackTimeInfo timeInfo, StreamCallbackFlags statusFlags, IntPtr userData)
     {
-        int bufferSize = (int)(frameCount * sizeof(short));
-        byte[] audioBuffer = new byte[bufferSize];
-        if (input != IntPtr.Zero)
-        {
-            Marshal.Copy(input, audioBuffer, 0, bufferSize);
-            _audioChannel?.Writer.TryWrite(audioBuffer);
-        }
+        if (input == IntPtr.Zero || _audioChannel is null)
+            return StreamCallbackResult.Continue;
+
+        var bufferSize = (int)(frameCount * sizeof(short));
+        var rented = ArrayPool<byte>.Shared.Rent(bufferSize);
+
+        Marshal.Copy(input, rented, 0, bufferSize);
+        _audioChannel.Writer.TryWrite(rented);
+
         return StreamCallbackResult.Continue;
     }
 
-    private void StartStream()
+    private void StartInputStream()
     {
-        // for (int i = 0; i < PortAudio.DeviceCount; i++)
-        // {
-        //     var info = PortAudio.GetDeviceInfo(i);
-        //     Console.WriteLine($"Device {i}: {info.name}, maxInputChannels={info.maxInputChannels}");
-        // }
-        //
-        // Console.WriteLine($"DefaultInputDevice: {PortAudio.DefaultInputDevice}");
-        // var defaultInfo = PortAudio.GetDeviceInfo(PortAudio.DefaultInputDevice);
-        // Console.WriteLine($"Default device name: {defaultInfo.name}, maxInputChannels={defaultInfo.maxInputChannels}");
-        
-        var param = new StreamParameters
+        var inputParam = new StreamParameters
         {
-            device = 22, // PortAudio.DefaultInputDevice,
+            device = PortAudio.DefaultInputDevice,
             channelCount = 1,
             sampleFormat = SampleFormat.Int16,
             suggestedLatency = PortAudio.GetDeviceInfo(PortAudio.DefaultInputDevice).defaultLowInputLatency,
@@ -149,38 +125,27 @@ public partial class MainWindowViewModel : ViewModelBase
         const int sampleRate = 16000;
         const uint framesPerBuffer = 256u;
 
-        // Libera handle anterior, se existir
-        if (_audioChannelHandle.HasValue && _audioChannelHandle.Value.IsAllocated)
-            _audioChannelHandle.Value.Free();
-
-        Console.WriteLine($"Criando GCHandle para canal: {_audioChannel?.GetHashCode()}");
-        _audioChannelHandle = GCHandle.Alloc(_audioChannel!, GCHandleType.Normal);
-
-        _audioStream = new PortAudioSharp.Stream(
-            param, null, sampleRate, framesPerBuffer,
-            StreamFlags.ClipOff, _callback, IntPtr.Zero // nao usa ponteiro para userData
+        _inputStream = new Stream(
+            inputParam, null, sampleRate, framesPerBuffer,
+            StreamFlags.ClipOff, _inputCallback, IntPtr.Zero
         );
-        _audioStream.Start();
+        _inputStream.Start();
+        Console.WriteLine("[INFO] Stream de entrada iniciado.");
     }
 
     public void StopAudioCapture()
     {
-        // Completa o canal para encerrar o envio de áudio
+        Console.WriteLine("[INFO] Parando captura/reprodução de áudio...");
+
         _audioChannel?.Writer.Complete();
 
-        // Para e libera o stream do PortAudio, se existir
-        if (_audioStream != null)
+        if (_inputStream != null)
         {
-            _audioStream.Stop();
-            _audioStream.Dispose();
-            _audioStream = null;
+            _inputStream.Stop();
+            _inputStream.Dispose();
+            _inputStream = null;
         }
 
-        // Libera o GCHandle
-        if (_audioChannelHandle.HasValue && _audioChannelHandle.Value.IsAllocated)
-        {
-            _audioChannelHandle.Value.Free();
-            _audioChannelHandle = null;
-        }
+        Console.WriteLine("[INFO] Captura/reprodução encerradas.");
     }
 }
