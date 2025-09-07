@@ -45,7 +45,7 @@ public partial class MainWindowViewModel : ViewModelBase
             SingleWriter = false
         });
 
-        var audioPlayer = new AudioPlayer();
+        //var audioPlayer = new AudioPlayer();
         var receivedAudioFile = Path.Combine(Path.GetTempPath(), "received_audio.wav");
         
 
@@ -59,21 +59,20 @@ public partial class MainWindowViewModel : ViewModelBase
                 CancellationToken.None
             );
 
-            audioPlayer.StartPlayback();
             await foreach (var replyBytes in stream)
             {
                 Console.WriteLine($"[RECV] Recebido {replyBytes.Length} bytes do servidor.");
-
-                // Salva os dados recebidos no arquivo
+                
                 await using var fileStream = new FileStream(receivedAudioFile, FileMode.Create, FileAccess.Write);
                 await fileStream.WriteAsync(replyBytes);
-
-                // Adiciona os dados ao player
-                audioPlayer.AddAudioData(replyBytes);
             }
 
-            audioPlayer.StopPlayback();
             Console.WriteLine($"[INFO] Áudio recebido salvo em: {receivedAudioFile}");
+            
+            var player = new NetCoreAudio.Player();
+            await player.Play(receivedAudioFile);
+
+            File.Delete(receivedAudioFile);
         });
 
         PortAudio.Initialize();
