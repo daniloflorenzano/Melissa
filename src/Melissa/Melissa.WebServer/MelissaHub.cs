@@ -21,7 +21,7 @@ public class MelissaHub : Hub
         var (isAvailable, statusMessage) = await melissa.CanUse();
         if (!isAvailable)
             yield return statusMessage;
-        
+
         var question = new Question(message, "TextHub", DateTimeOffset.Now);
         await foreach (var t in SafeAskMelissa(melissa, question, cancellationToken))
         {
@@ -29,7 +29,8 @@ public class MelissaHub : Hub
         }
     }
 
-    public async IAsyncEnumerable<byte[]> AskMelissaAudio(IAsyncEnumerable<byte[]> audioStream, [FromServices] MelissaAssistant melissa,
+    public async IAsyncEnumerable<byte[]> AskMelissaAudio(IAsyncEnumerable<byte[]> audioStream,
+        [FromServices] MelissaAssistant melissa,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         using var ms = new MemoryStream();
@@ -46,10 +47,10 @@ public class MelissaHub : Hub
         {
             await DownloadModel(modelFileName, ggmlType);
         }
-        
+
         using var whisperFactory = WhisperFactory.FromPath("ggml-medium.bin");
         await using var processor = whisperFactory.CreateBuilder()
-            .WithLanguage("pt")           
+            .WithLanguage("pt")
             .Build();
 
         var pcmBytes = ms.ToArray();
@@ -63,57 +64,60 @@ public class MelissaHub : Hub
         {
             msgBuilder.Append(result.Text);
         }
-        
+
         var message = msgBuilder.ToString();
         Log.Information("Usuário: {0}", message);
-        
+
         var question = new Question(message, "AudioHub", DateTimeOffset.Now);
         string melissaReply;
         var (isAvailable, statusMessage) = await melissa.CanUse();
-        
+
         if (isAvailable)
-            melissaReply = await MelissaHub.SafeAskMelissaWithErrorHandlingAndRetry(melissa, question, cancellationToken);
+            melissaReply =
+                await MelissaHub.SafeAskMelissaWithErrorHandlingAndRetry(melissa, question, cancellationToken);
         else
             melissaReply = statusMessage;
 
-        
+
         var edgeTts = new EdgeTTSNet();
-    
+
         var voices = await edgeTts.GetVoices();
         var cnVoice = voices.FirstOrDefault(v => v.ShortName == "pt-BR-FranciscaNeural");
         var options = new TTSOption
         (
-            voice: cnVoice.Name,
+            voice: cnVoice!.Name,
             pitch: "+0Hz",
             rate: "+25%",
             volume: "+0%"
         );
-        
+
         Log.Information("Assistente: {0}", melissaReply);
-        
-        var tempFilePath = Path.Combine(Path.GetTempPath(), "temp.mp3");
-        var fs = new FileStream(tempFilePath, FileMode.Create);
+
 
         edgeTts = new EdgeTTSNet(options);
-        await edgeTts.TTS(melissaReply, (metaObj) =>
+        var channel = Channel.CreateUnbounded<byte[]>();
+
+        _ = Task.Run(async () =>
         {
-            if (metaObj.Type == TTSMetadataType.Audio)
+            await edgeTts.TTS(melissaReply, (metaObj) =>
             {
-                fs.Write(metaObj.Data);
-            }
+                if (metaObj.Type == TTSMetadataType.Audio)
+                {
+                    channel.Writer.TryWrite(metaObj.Data);
+                }
+            }, cancellationToken);
+
+            channel.Writer.Complete();
         }, cancellationToken);
 
-        var fsAsWav = await AudioConverter.ConvertMp3StreamToWavAsync(fs, cancellationToken);
-        
-        await fs.FlushAsync(cancellationToken);
-        await fs.DisposeAsync();
-        
-        File.Delete(tempFilePath);
-
-        yield return fsAsWav;
+        await foreach (var audioChunk in channel.Reader.ReadAllAsync(cancellationToken))
+        {
+            yield return audioChunk;
+        }
     }
-    
-    private static byte[] GenerateWav(byte[] pcmData, int sampleRate = 16000, short bitsPerSample = 16, short channels = 1)
+
+    private static byte[] GenerateWav(byte[] pcmData, int sampleRate = 16000, short bitsPerSample = 16,
+        short channels = 1)
     {
         using var ms = new MemoryStream();
         using var writer = new BinaryWriter(ms);
@@ -146,7 +150,7 @@ public class MelissaHub : Hub
         writer.Flush();
         return ms.ToArray();
     }
-    
+
     static async Task DownloadModel(string fileName, GgmlType ggmlType)
     {
         Console.WriteLine($"Downloading Model {fileName}");
@@ -161,7 +165,7 @@ public class MelissaHub : Hub
         var channel = Channel.CreateUnbounded<string>();
         var historyData = new DbConversationHistory();
         historyData.Pergunta = question.Text;
-        
+
         _ = Task.Run(async () =>
         {
             try
@@ -192,8 +196,9 @@ public class MelissaHub : Hub
             }
         }
     }
-    
-    public static async Task<string> SafeAskMelissaWithErrorHandlingAndRetry(MelissaAssistant melissa, Question question,
+
+    public static async Task<string> SafeAskMelissaWithErrorHandlingAndRetry(MelissaAssistant melissa,
+        Question question,
         CancellationToken cancellationToken = default)
     {
         try
@@ -203,12 +208,13 @@ public class MelissaHub : Hub
             while (tryCount < 3)
             {
                 tryCount++;
-                
+
                 var replyBuilder = new StringBuilder();
                 await foreach (var item in SafeAskMelissa(melissa, question, cancellationToken))
                 {
                     replyBuilder.Append(item);
                 }
+
                 var reply = replyBuilder.ToString();
 
                 if (string.IsNullOrWhiteSpace(reply))
@@ -222,7 +228,7 @@ public class MelissaHub : Hub
                     Log.Warning("Resposta da assistente provavelmente é um JSON, repetindo a pergunta...: {0}", reply);
                     continue;
                 }
-                
+
                 return reply;
             }
 
