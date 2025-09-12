@@ -1,5 +1,9 @@
-﻿using System.Net.Mail;
+﻿using System.Globalization;
+using System.Net;
+using System.Net.Mail;
+using System.Text;
 using Melissa.Core.ExternalData;
+using Melissa.Core.Utils;
 using Microsoft.EntityFrameworkCore;
 
 namespace Melissa.Core.AiTools.TaskList;
@@ -7,11 +11,11 @@ namespace Melissa.Core.AiTools.TaskList;
 public class TaskListService
 {
     private readonly AppDbContext _dbContext = new();
-    
+
     /// <summary>
     /// Registra uma nova tarefa.
     /// </summary>
-    public async Task RegisterNewTask( Tasks task )
+    public async Task RegisterNewTask(Tasks task)
     {
         try
         {
@@ -24,13 +28,17 @@ public class TaskListService
             throw;
         }
     }
-    
-    public async Task AddNewTaskItem( TaskItens taskItem, string taskTitle )
-    {
 
+    /// <summary>
+    /// Adiciona um novo Item à uma determinada Task
+    /// </summary>
+    /// <param name="taskItem"></param>
+    /// <param name="taskTitle"></param>
+    public async Task AddNewTaskItem(TaskItens taskItem, string taskTitle)
+    {
         var task = await _dbContext.Tasks.Where(t => t.Title.Contains(taskTitle)).ToListAsync();
         taskItem.TaskId = task.Select(t => t.Id).Max();
-        
+
         try
         {
             await _dbContext.TaskItens.AddAsync(taskItem);
@@ -41,7 +49,6 @@ public class TaskListService
             Console.WriteLine(e);
             throw;
         }
-        
     }
 
     /// <summary>
@@ -60,7 +67,7 @@ public class TaskListService
             throw;
         }
     }
-    
+
     /// <summary>
     /// Lista todas as tarefas registradas.
     /// </summary>
@@ -68,7 +75,7 @@ public class TaskListService
     public async Task<Tasks> GetTaskByName(string taskName)
     {
         Tasks taskResult = new Tasks();
-        
+
         try
         {
             var task = await _dbContext.Tasks.Where(c => c.Title == taskName).ToListAsync();
@@ -83,9 +90,8 @@ public class TaskListService
                     IncludedAt = task.Select(t => t.IncludedAt).Max()
                 };
             }
-            
+
             return taskResult;
-            
         }
         catch (Exception e)
         {
@@ -113,44 +119,132 @@ public class TaskListService
     }
     
     /// <summary>
-    /// Envia 
+    /// Completa um item de tarefa específico pelo ID.
     /// </summary>
-    /// <param name="email"></param>
-    /// <param name="task"></param>
-    public async Task SendTaskByEmail(string email, TaskItens task)
+    /// <param name="idItem"></param>
+    public async Task<string> UpdateCompleteStatusTaskItem(int idItem)
     {
         try
         {
-            var emailService = new SmtpClient();
-
-            #region SmtpClient Configuration
-
-            emailService.Host = "smtp.gmail.com";
-            emailService.Port = 587;
-            emailService.EnableSsl = true;
-            emailService.Credentials = new System.Net.NetworkCredential("...", "...");
-
-            #endregion
-
-            #region Email Configuration
+            var update = await _dbContext.TaskItens.Where(t => t.Id == idItem)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(t => t.IsCompleted, t => true)
+                    .SetProperty(t => t.CompletedAt, t => DateTime.Now));
             
-            var mailMessage = new MailMessage
-            {
-                From = new MailAddress("..."),
-                Subject = "Nova Tarefa Registrada",
-                Body = $"Tarefa: {task.TaskId}\nDescrição: {task.Description}\nIncluída em: {task.IncludedAt}"
-            };
-            
-            #endregion
-            
-            mailMessage.To.Add(new MailAddress(email));
-            await emailService.SendMailAsync(mailMessage);
+            return update > 0 ? $"Item {idItem} completado com sucesso." : $"Nenhum item encontrado com ID {idItem}.";
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
-            throw;
+            return "Erro ao completar o item.";
         }
     }
-  
+    
+    /// <summary>
+    /// Envia por e-mail uma lista de itens pertencentes a uma determinada tarefa.
+    /// </summary>
+    /// <param name="email">E-mail do destinatário.</param>
+    /// <param name="itens">Lista de itens (todos do mesmo TaskId).</param>
+    /// <param name="nomeTarefa">Nome/título da tarefa.</param>
+    public async Task SendTaskByEmailAsync(string email, List<TaskItens> itens, string nomeTarefa)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ArgumentException("E-mail inválido.", nameof(email));
+
+        if (itens == null || itens.Count == 0)
+            throw new ArgumentException("A lista de itens está vazia.", nameof(itens));
+        
+        var taskId = itens.First().TaskId;
+        
+        var culture = new CultureInfo("pt-BR");
+
+        var subject = $"Tarefa #{taskId} - {nomeTarefa} ({itens.Count} item(ns))";
+
+        // Monta corpo em HTML com uma tabela
+        var sb = new StringBuilder();
+        sb.Append($@"
+                    <!DOCTYPE html>
+                    <html lang='pt-BR'>
+                    <head>
+                    <meta charset='UTF-8'>
+                    <style>
+                      body {{ font-family: Arial, Helvetica, sans-serif; }}
+                      .wrap {{ max-width: 720px; margin: 0 auto; }}
+                      h1 {{ font-size: 18px; }}
+                      table {{ border-collapse: collapse; width: 100%; }}
+                      th, td {{ border: 1px solid #ddd; padding: 8px; font-size: 14px; }}
+                      th {{ background: #f5f5f5; text-align: left; }}
+                      .ok {{ color: #0a7; font-weight: bold; }}
+                      .pendente {{ color: #b50; font-weight: bold; }}
+                    </style>
+                    </head>
+                    <body>
+                    <div class='wrap'>
+                      <h1>Tarefa #{taskId} — {WebUtility.HtmlEncode(nomeTarefa)}</h1>
+                      <p>Segue a lista de itens ({itens.Count}):</p>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>Descrição</th>
+                            <th>Incluída em</th>
+                            <th>Concluída em</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>");
+
+        foreach (var item in itens.OrderBy(i => i.IncludedAt))
+        {
+            var included = item.IncludedAt.ToString("dd/MM/yyyy HH:mm", culture);
+            var completed = (item.IsCompleted && item.CompletedAt != default)
+                ? item.CompletedAt.ToString("dd/MM/yyyy HH:mm", culture)
+                : "-";
+
+            var statusText = item.IsCompleted ? "Concluído" : "Pendente";
+            var statusClass = item.IsCompleted ? "ok" : "pendente";
+
+            sb.Append($@"
+                         <tr>
+                           <td>{item.Id}</td>
+                           <td>{WebUtility.HtmlEncode(item.Description)}</td>
+                           <td>{included}</td>
+                           <td>{completed}</td>
+                           <td class='{statusClass}'>{statusText}</td>
+                         </tr>");
+        }
+
+        sb.Append(@"
+                        </tbody>
+                      </table>
+                      <p style='font-size:12px;color:#666'>Mensagem automática — Melissa</p>
+                    </div>
+                    </body>
+                    </html>");
+
+        var bodyHtml = sb.ToString();
+
+        using var mailMessage = new MailMessage
+        {
+            From = new MailAddress("joao.jordao@aedb.br", "Melissa"),
+            Subject = subject,
+            Body = bodyHtml,
+            IsBodyHtml = true,
+            BodyEncoding = Encoding.UTF8,
+            SubjectEncoding = Encoding.UTF8
+        };
+
+        mailMessage.To.Add(new MailAddress(email));
+        
+        var (appEmail, appPass) = Credentials.EmailCredsLoader.Load();
+
+        using var smtp = new SmtpClient("smtp.gmail.com", 587)
+        {
+            EnableSsl = true,
+            Credentials = new NetworkCredential(appEmail, appPass),
+            DeliveryMethod = SmtpDeliveryMethod.Network
+        };
+
+        await smtp.SendMailAsync(mailMessage);
+    }
 }

@@ -28,6 +28,8 @@ public class Melissa : Assistant
             .WithTool(new AddNewItemOnListTool())
             .WithTool(new GetAllTasksTool())
             .WithTool(new GetAllTasksItensTool())
+            .WithTool(new SendTaskByEmailTool())
+            .WithTool(new CompleteTaskItemTool())
             .WithTool(new SendEmailConversationHistoryByPeriodTool());
         Chat = chatBuilder.Build().Result;
         

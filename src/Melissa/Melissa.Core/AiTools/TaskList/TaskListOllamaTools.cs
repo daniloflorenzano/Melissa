@@ -108,4 +108,57 @@ public class TaskListOllamaTools
 
         return sb.ToString();
     }
+    
+    /// <summary>
+    /// Atualiza o status de um item de tarefa para "completado".
+    /// </summary>
+    /// <param name="taskName"></param>
+    /// <param name="itemName"></param>
+    /// <returns></returns>
+    [OllamaTool]
+    public static async Task<string> CompleteTaskItem(string taskName, string itemName)
+    {
+        var taskServive = new TaskListService();
+        
+        Tasks task = await taskServive.GetTaskByName(taskName);
+        
+        if (task.Id == 0)
+            return $"Nenhum item encontrado para a Tarefa {taskName}.";
+        
+        List<TaskItens> taskItems = await taskServive.GetTaskItensByTaskId(task.Id);
+        var item = taskItems.FirstOrDefault(i => i.Description.Equals(itemName, StringComparison.OrdinalIgnoreCase));
+        
+        if (item == null)
+            return $"Item '{itemName}' não encontrado na Tarefa '{taskName}'.";
+
+        if (item.IsCompleted)
+            return $"Item '{itemName}' já está marcado como completado.";
+
+        return await taskServive.UpdateCompleteStatusTaskItem(item.Id);
+    }
+
+    /// <summary>
+    /// Envia uma lista de tarefas por email.
+    /// </summary>
+    /// <param name="email"></param>
+    /// <param name="taskName"></param>
+    [OllamaTool]
+    public static async Task<string> SendTaskByEmail(string email, string taskName)
+    {
+        var taskServive = new TaskListService();
+        Tasks task = await taskServive.GetTaskByName(taskName);
+        
+        if (task.Id == 0)
+            return $"Nenhum item encontrado para a Tarefa {taskName}.";
+        
+        List<TaskItens> taskItems = await taskServive.GetTaskItensByTaskId(task.Id);
+
+        if (taskItems.Count > 0)
+        {
+            await taskServive.SendTaskByEmailAsync(email, taskItems, taskName);
+            return $"Lista '{taskName}' enviada para o email {email} com sucesso!";
+        }
+        
+        return "Não há itens para enviar.";
+    }
 }
