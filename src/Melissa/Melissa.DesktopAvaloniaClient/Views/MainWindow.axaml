@@ -3,6 +3,7 @@
         xmlns:vm="using:Melissa.DesktopAvaloniaClient.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:Melissa.DesktopAvaloniaClient.Views"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="Melissa.DesktopAvaloniaClient.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -10,25 +11,35 @@
         Title="Melissa.DesktopAvaloniaClient">
 
     <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainWindowViewModel />
     </Design.DataContext>
 
+    <Grid RowDefinitions="Auto, *" ColumnDefinitions="*, Auto">
 
-    <StackPanel>
-        <Button
-            x:Name="MicButton"
-            Width="500"
-            Height="500"
-            CornerRadius="250"
-            FontSize="100"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            Content="🎙️"
-            Background="GreenYellow"
-            PointerPressed="OnMicButtonPressed"
-            PointerReleased="OnMicButtonReleased" />
-    </StackPanel>
-    
+        <Button Grid.Row="0" Grid.Column="1"
+                Margin="10"
+                Content="⚙️"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                FontSize="20"
+                Width="40" Height="40"
+                Command="{Binding OpenSettingsCommand}" />
+
+        <Grid Grid.Row="1" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center">
+
+            <!-- O botão do microfone como a camada de baixo -->
+            <Button x:Name="MicButton"
+                    Width="500"
+                    Height="500"
+                    CornerRadius="250"
+                    Background="GreenYellow"
+                    PointerPressed="OnMicButtonPressed"
+                    PointerReleased="OnMicButtonReleased"
+                    IsEnabled="{Binding !IsPlayingAudio}"/>
+
+            <!-- A visibilidade do canvas agora depende da propriedade IsPlayingAudio.
+                 Ele será visível somente quando o áudio estiver sendo reproduzido. -->
+            <views:AudioWaveform Width="400" Height="400" IsVisible="{Binding IsPlayingAudio}" IsAnimating="{Binding IsPlayingAudio}"/>
+        </Grid>
+    </Grid>
 </Window>

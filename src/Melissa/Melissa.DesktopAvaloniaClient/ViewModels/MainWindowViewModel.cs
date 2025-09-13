@@ -5,7 +5,12 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Melissa.DesktopAvaloniaClient.Views;
 using Microsoft.AspNetCore.SignalR.Client;
 using PortAudioSharp;
 using Stream = PortAudioSharp.Stream;
@@ -14,7 +19,9 @@ namespace Melissa.DesktopAvaloniaClient.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    private const string MelissaServerUrl = "http://localhost:5179";
+    [ObservableProperty] private string _melissaServerUrl = "http://localhost:5179";
+    [ObservableProperty] private bool _isPlayingAudio;
+    [ObservableProperty] private List<short> _audioWaveformData = [];
 
     private HubConnection? _hubConnection;
     private Channel<byte[]>? _audioChannel;
@@ -44,7 +51,6 @@ public partial class MainWindowViewModel : ViewModelBase
             SingleWriter = false
         });
 
-        // Inicia task de envio/recepção
         _ = Task.Run(async () =>
         {
             Console.WriteLine("[INFO] Iniciando task de envio/recepção de áudio...");
@@ -55,16 +61,26 @@ public partial class MainWindowViewModel : ViewModelBase
             );
 
             var pipe = new System.IO.Pipelines.Pipe();
-            
-            _ = Task.Run(async () =>
+
+            var readTask = Task.Run(async () =>
             {
-                await foreach (var replyBytes in stream) 
+                await foreach (var replyBytes in stream)
+                {
                     await pipe.Writer.WriteAsync(replyBytes);
-                
+
+                    // Atualiza a propriedade com uma cópia da janela
+                    Dispatcher.UIThread.Post(() => { IsPlayingAudio = true; });
+                }
+
                 await pipe.Writer.CompleteAsync();
             });
-            
-            await Mpg123Wrapper.PlayAudioFromStreamAsync(pipe.Reader.AsStream());
+
+            var player = new Mpg123Wrapper();
+
+            await player.PlayAudioFromStreamAsync(pipe.Reader.AsStream());
+            IsPlayingAudio = false;
+
+            await readTask;
         });
 
         PortAudio.Initialize();
@@ -138,5 +154,24 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         Console.WriteLine("[INFO] Captura/reprodução encerradas.");
+    }
+
+    [RelayCommand]
+    private async Task OpenSettings()
+    {
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            var settingsWindow = new SettingsWindow();
+
+            var settingsViewModel = new SettingsViewModel(MelissaServerUrl, result => settingsWindow.Close(result));
+            settingsWindow.DataContext = settingsViewModel;
+
+            var result = await settingsWindow.ShowDialog<bool>(desktop.MainWindow!);
+            if (result)
+            {
+                MelissaServerUrl = settingsViewModel.ServerAddress;
+                Console.WriteLine($"[INFO] URL do servidor atualizada para: {MelissaServerUrl}");
+            }
+        }
     }
 }
