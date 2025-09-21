@@ -44,5 +44,6 @@ app.MapPost("/melissa/AskMelissaAudio", AudioEndpoints.AskMelissaAudio);
 
 // Rotas de ferramentas
 app.MapGet("/melissa/GetCurrentTemperatureByLocation",  async (string location) => await AppEndpoints.GetCurrentWeatherByLocalizationAsync(location));
+app.MapGet("/melissa/ExportNationalHolidaysToTxt", AppEndpoints.ExportNationalHolidaysToTxt);
 
 app.Run();
