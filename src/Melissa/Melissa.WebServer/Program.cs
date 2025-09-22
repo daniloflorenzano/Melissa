@@ -69,5 +69,9 @@ app.MapPost("/melissa/CompleteItemTask", AppEndpoints.CompleteItemTask);
 // SendTaskByEmail
 app.MapPost("/melissa/SendTaskByEmail", AppEndpoints.SendTaskByEmail);
 
+app.MapPost("/melissa/ArchiveTaskById", AppEndpoints.ArchiveTaskById);
+
+app.MapPost("/melissa/UnarchiveTaskById", AppEndpoints.UnarchiveTaskById);
+
 
 app.Run();

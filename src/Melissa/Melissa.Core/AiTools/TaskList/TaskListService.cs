@@ -106,7 +106,8 @@ public class TaskListService
                     Id = task.Select(t => t.Id).Max(),
                     Title = task.Select(t => t.Title).Max(),
                     Description = task.Select(t => t.Description).Max(),
-                    IncludedAt = task.Select(t => t.IncludedAt).Max()
+                    IncludedAt = task.Select(t => t.IncludedAt).Max(),
+                    IsArchived = task.Select(t => t.IsArchived).Max(),
                 };
             }
 
@@ -339,6 +340,62 @@ public class TaskListService
                 Console.WriteLine($"Nenhum item encontrado para o item ID {taskItenId}.");
             else
                 Console.WriteLine($"{rows} item foi cancelado.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// Arquiva uma tarefa específica pelo ID.
+    /// </summary>
+    /// <param name="taskId"></param>
+    public async Task ArchiveTaskById(int taskId)
+    {
+        try
+        {
+            var rows = await _dbContext.Tasks
+                .Where(t => t.Id == taskId)
+                .ExecuteUpdateAsync(t => t
+                    .SetProperty(i => i.IsArchived, true));
+
+            await _dbContext.SaveChangesAsync();
+            _dbContext.ChangeTracker.Clear();
+
+            if (rows == 0)
+                Console.WriteLine($"Nenhuma tarefa encontrada para o ID {taskId}.");
+            else
+                Console.WriteLine($"{rows} tarefa foi arquivada.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// Desarquiva uma tarefa específica pelo ID.
+    /// </summary>
+    /// <param name="taskId"></param>
+    public async Task UnarchiveTaskById(int taskId)
+    {
+        try
+        {
+            var rows = await _dbContext.Tasks
+                .Where(t => t.Id == taskId)
+                .ExecuteUpdateAsync(t => t
+                    .SetProperty(i => i.IsArchived, false));
+
+            await _dbContext.SaveChangesAsync();
+            _dbContext.ChangeTracker.Clear();
+
+            if (rows == 0)
+                Console.WriteLine($"Nenhuma tarefa encontrada para o ID {taskId}.");
+            else
+                Console.WriteLine($"{rows} tarefa foi desarquivada.");
         }
         catch (Exception ex)
         {

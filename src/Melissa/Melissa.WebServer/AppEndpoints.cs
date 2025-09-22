@@ -118,6 +118,24 @@ public class AppEndpoints
         if (taskItems.Count > 0)
             await taskServive.SendTaskByEmailAsync(email, taskItems, taskName);
     }
+    
+    /// <summary>
+    /// Arquiva uma tarefa específica.
+    /// </summary>
+    /// <param name="taskId"></param>
+    public static async Task ArchiveTaskById(int taskId)
+    {
+        await TaskListService.ArchiveTaskById(taskId);
+    }
+    
+    /// <summary>
+    /// Desarquiva uma tarefa específica.
+    /// </summary>
+    /// <param name="taskId"></param>
+    public static async Task UnarchiveTaskById(int taskId)
+    {
+        await TaskListService.UnarchiveTaskById(taskId);
+    }
 
     #endregion
     
