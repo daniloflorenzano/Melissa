@@ -57,7 +57,7 @@ public class AppEndpoints
     /// </summary>
     /// <param name="taskId"></param>
     /// <param name="taskDescription"></param>
-    public static async Task AddNewItenTask(int taskId, string taskDescription)
+    public static async Task AddNewItemTask(int taskId, string taskDescription)
     {
         var taskItem = new TaskItens();
 
@@ -67,6 +67,12 @@ public class AppEndpoints
         taskItem.IsCompleted = false;
         
         await TaskListService.AddNewTaskItemByTaskId(taskItem);
+    }
+    
+    // Cancela um item de uma tarefa.
+    public static async Task CancelTaskItemById(int taskItenId, int taskId)
+    {
+        await TaskListService.CancelTaskItemById(taskItenId, taskId);
     }
 
     /// <summary>
@@ -92,7 +98,7 @@ public class AppEndpoints
     /// Completa um item de tarefa.
     /// </summary>
     /// <param name="taskItenId"></param>
-    public static async Task CompleteItenTask(int taskItenId)
+    public static async Task CompleteItemTask(int taskItenId)
     {
         await TaskListService.UpdateCompleteStatusTaskItem(taskItenId);
     }

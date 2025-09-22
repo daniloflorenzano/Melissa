@@ -8,4 +8,6 @@ public class TaskItens
     public DateTime IncludedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
     public bool IsCompleted { get; set; }
+    public DateTime CanceledAt { get; set; }
+    public bool IsCanceled { get; set; }
 }

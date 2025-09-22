@@ -318,4 +318,32 @@ public class TaskListService
 
         await smtp.SendMailAsync(mailMessage);
     }
+    
+    /// <summary>
+    /// Cancela (marca como cancelado) um item de tarefa específico pelo ID.
+    /// </summary>
+    /// <param name="taskItenId"></param>
+    public async Task CancelTaskItemById(int taskItenId, int taskId)
+    {
+        try
+        {
+            var rows = await _dbContext.TaskItens
+                .Where(t => t.Id == taskItenId && t.TaskId == taskId)
+                .ExecuteUpdateAsync(t => t
+                    .SetProperty(i => i.CanceledAt, DateTime.Now)
+                    .SetProperty(i => i.IsCanceled, true));
+
+            await _dbContext.SaveChangesAsync();
+
+            if (rows == 0)
+                Console.WriteLine($"Nenhum item encontrado para o item ID {taskItenId}.");
+            else
+                Console.WriteLine($"{rows} item foi cancelado.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            throw;
+        }
+    }
 }

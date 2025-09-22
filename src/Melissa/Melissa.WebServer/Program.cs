@@ -52,7 +52,10 @@ app.MapGet("/melissa/ExportNationalHolidaysToTxt", AppEndpoints.ExportNationalHo
 app.MapPost("/melissa/AddNewTask", AppEndpoints.AddNewTask);
 
 // AddNewItenTask
-app.MapPost("/melissa/AddNewItenTask", AppEndpoints.AddNewItenTask);
+app.MapPost("/melissa/AddNewItenTask", AppEndpoints.AddNewItemTask);
+
+// CancelTaskItemById
+app.MapPost("/melissa/CancelTaskItemById", AppEndpoints.CancelTaskItemById);
 
 // GetAllTasks
 app.MapGet("/melissa/GetAllTasks", AppEndpoints.GetAllTasks);
@@ -61,7 +64,7 @@ app.MapGet("/melissa/GetAllTasks", AppEndpoints.GetAllTasks);
 app.MapGet("/melissa/GetAllItensTasks", AppEndpoints.GetAllItensByTaskId);
 
 // CompleteItenTask
-app.MapPost("/melissa/CompleteItenTask", AppEndpoints.CompleteItenTask);
+app.MapPost("/melissa/CompleteItemTask", AppEndpoints.CompleteItemTask);
 
 // SendTaskByEmail
 app.MapPost("/melissa/SendTaskByEmail", AppEndpoints.SendTaskByEmail);
