@@ -78,7 +78,7 @@ public class TaskListService
     {
         try
         {
-            return await _dbContext.Tasks.ToListAsync();
+            return await _dbContext.Tasks.AsNoTracking().ToListAsync();
         }
         catch (Exception e)
         {
@@ -161,7 +161,7 @@ public class TaskListService
     {
         try
         {
-            return await _dbContext.TaskItens.Where(t => t.TaskId == id).ToListAsync();
+            return await _dbContext.TaskItens.Where(t => t.TaskId == id).AsNoTracking().ToListAsync();
         }
         catch (Exception e)
         {
@@ -335,6 +335,7 @@ public class TaskListService
                     .SetProperty(i => i.IsCanceled, true));
 
             await _dbContext.SaveChangesAsync();
+            _dbContext.ChangeTracker.Clear();
 
             if (rows == 0)
                 Console.WriteLine($"Nenhum item encontrado para o item ID {taskItenId}.");
