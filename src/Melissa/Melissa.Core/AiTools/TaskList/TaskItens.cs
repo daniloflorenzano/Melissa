@@ -6,6 +6,6 @@ public class TaskItens
     public int TaskId { get; set; }
     public string Description { get; set; }
     public DateTime IncludedAt { get; set; }
-    public DateTime CompletedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
     public bool IsCompleted { get; set; }
 }
