@@ -50,6 +50,25 @@ public class TaskListService
             throw;
         }
     }
+    
+    /// <summary>
+    /// Adiciona um novo Item à uma determinada Task
+    /// </summary>
+    /// <param name="taskItem"></param>
+    /// <param name="taskTitle"></param>
+    public async Task AddNewTaskItemByTaskId(TaskItens taskItem)
+    {
+        try
+        {
+            await _dbContext.TaskItens.AddAsync(taskItem);
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
 
     /// <summary>
     /// Lista todas as tarefas registradas.
@@ -99,6 +118,38 @@ public class TaskListService
             throw;
         }
     }
+    
+    /// <summary>
+    /// Lista todas as tarefas registradas.
+    /// </summary>
+    /// <returns></returns>
+    public async Task<Tasks> GetTaskById(int taskId)
+    {
+        Tasks taskResult = new Tasks();
+
+        try
+        {
+            var task = await _dbContext.Tasks.Where(c => c.Id == taskId).ToListAsync();
+
+            if (task.Any())
+            {
+                return new Tasks()
+                {
+                    Id = task.Select(t => t.Id).Max(),
+                    Title = task.Select(t => t.Title).Max(),
+                    Description = task.Select(t => t.Description).Max(),
+                    IncludedAt = task.Select(t => t.IncludedAt).Max()
+                };
+            }
+
+            return taskResult;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
 
     /// <summary>
     /// Lista os itens de uma tarefa específica pelo ID.
@@ -126,17 +177,37 @@ public class TaskListService
     {
         try
         {
-            var update = await _dbContext.TaskItens.Where(t => t.Id == idItem)
+            var rows = await _dbContext.TaskItens
+                .Where(t => t.Id == idItem)
                 .ExecuteUpdateAsync(s => s
-                    .SetProperty(t => t.IsCompleted, t => true)
-                    .SetProperty(t => t.CompletedAt, t => DateTime.Now));
-            
-            return update > 0 ? $"Item {idItem} completado com sucesso." : $"Nenhum item encontrado com ID {idItem}.";
+                    .SetProperty(t => t.IsCompleted, t => !t.IsCompleted)
+                    .SetProperty(t => t.CompletedAt, t => t.IsCompleted
+                        ? (DateTime?)null              // estava concluída -> limpa
+                        : DateTime.UtcNow));           // não estava -> conclui agora
+
+            // Sincroniza o contexto para não ver valores antigos
+            _dbContext.ChangeTracker.Clear();
+
+            // (Opcional) buscar o estado atualizado sem tracking
+            var updated = await _dbContext.TaskItens
+                .AsNoTracking()
+                .Where(t => t.Id == idItem)
+                .Select(t => new { t.IsCompleted, t.CompletedAt })
+                .SingleOrDefaultAsync();
+
+            if (rows == 0 || updated is null)
+                return $"Nenhum item encontrado com ID {idItem}.";
+
+            var msg = updated.IsCompleted
+                ? $"Item {idItem} marcado como concluído em {updated.CompletedAt}."
+                : $"Item {idItem} voltou para pendente.";
+
+            return msg;
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Console.WriteLine(e);
-            return "Erro ao completar o item.";
+            Console.WriteLine(ex);
+            return "Erro ao atualizar o status do item.";
         }
     }
     
@@ -198,7 +269,7 @@ public class TaskListService
         {
             var included = item.IncludedAt.ToString("dd/MM/yyyy HH:mm", culture);
             var completed = (item.IsCompleted && item.CompletedAt != default)
-                ? item.CompletedAt.ToString("dd/MM/yyyy HH:mm", culture)
+                ? item.CompletedAt?.ToString("dd/MM/yyyy HH:mm", culture)
                 : "-";
 
             var statusText = item.IsCompleted ? "Concluído" : "Pendente";

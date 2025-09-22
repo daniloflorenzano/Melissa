@@ -46,4 +46,25 @@ app.MapPost("/melissa/AskMelissaAudio", AudioEndpoints.AskMelissaAudio);
 app.MapGet("/melissa/GetCurrentTemperatureByLocation",  async (string location) => await AppEndpoints.GetCurrentWeatherByLocalizationAsync(location));
 app.MapGet("/melissa/ExportNationalHolidaysToTxt", AppEndpoints.ExportNationalHolidaysToTxt);
 
+// Tarefas:
+
+// AddNewTask
+app.MapPost("/melissa/AddNewTask", AppEndpoints.AddNewTask);
+
+// AddNewItenTask
+app.MapPost("/melissa/AddNewItenTask", AppEndpoints.AddNewItenTask);
+
+// GetAllTasks
+app.MapGet("/melissa/GetAllTasks", AppEndpoints.GetAllTasks);
+
+// GetAllItensTasks
+app.MapGet("/melissa/GetAllItensTasks", AppEndpoints.GetAllItensByTaskId);
+
+// CompleteItenTask
+app.MapPost("/melissa/CompleteItenTask", AppEndpoints.CompleteItenTask);
+
+// SendTaskByEmail
+app.MapPost("/melissa/SendTaskByEmail", AppEndpoints.SendTaskByEmail);
+
+
 app.Run();
