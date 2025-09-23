@@ -1,13 +1,16 @@
 ﻿using DefaultNamespace;
 using Melissa.Core.AiTools.Holidays;
 using Melissa.Core.AiTools.TaskList;
+using Melissa.Core.ExternalData;
+using Microsoft.EntityFrameworkCore;
+using Melissa.Core.ExternalData;
 
 namespace Melissa.WebServer;
 
 public class AppEndpoints
 {
     static TaskListService TaskListService = new TaskListService();
-    
+
     /// <summary>
     /// Retorna a temperatura atual de uma localização específica.
     /// </summary>
@@ -16,13 +19,13 @@ public class AppEndpoints
     public static async Task<string> GetCurrentWeatherByLocalizationAsync(string location)
     {
         var weatherService = new WeatherService();
-        
+
         var weather = await weatherService.GetWeatherAsync(location);
         var tempAtual = weather.TemperaturaAtual;
-        
+
         return tempAtual;
     }
-    
+
     /// <summary>
     /// Exporta os feriados nacionais para um arquivo txt.
     /// </summary>
@@ -33,7 +36,6 @@ public class AppEndpoints
         var holidayService = new HolidayService();
         await holidayService.ExportNationalHolidaysToTxt();
     }
-
 
     #region TaskList
 
@@ -48,7 +50,7 @@ public class AppEndpoints
         task.Title = taskTitle;
         task.Description = taskDescription ?? "Nova Lista";
         task.IncludedAt = DateTime.Now;
-        
+
         await TaskListService.RegisterNewTask(task);
     }
 
@@ -65,10 +67,10 @@ public class AppEndpoints
         taskItem.Description = taskDescription;
         taskItem.IncludedAt = DateTime.Now;
         taskItem.IsCompleted = false;
-        
+
         await TaskListService.AddNewTaskItemByTaskId(taskItem);
     }
-    
+
     // Cancela um item de uma tarefa.
     public static async Task CancelTaskItemById(int taskItenId, int taskId)
     {
@@ -102,7 +104,7 @@ public class AppEndpoints
     {
         await TaskListService.UpdateCompleteStatusTaskItem(taskItenId);
     }
-    
+
     /// <summary>
     /// Envia por e-mail os itens de uma tarefa específica.
     /// </summary>
@@ -112,13 +114,13 @@ public class AppEndpoints
     public static async Task SendTaskByEmail(string email, int taskId, string taskName)
     {
         var taskServive = new TaskListService();
-        
+
         List<TaskItens> taskItems = await taskServive.GetTaskItensByTaskId(taskId);
 
         if (taskItems.Count > 0)
             await taskServive.SendTaskByEmailAsync(email, taskItems, taskName);
     }
-    
+
     /// <summary>
     /// Arquiva uma tarefa específica.
     /// </summary>
@@ -127,7 +129,7 @@ public class AppEndpoints
     {
         await TaskListService.ArchiveTaskById(taskId);
     }
-    
+
     /// <summary>
     /// Desarquiva uma tarefa específica.
     /// </summary>
@@ -138,5 +140,18 @@ public class AppEndpoints
     }
 
     #endregion
-    
+
+    public static async Task SendEmailConversationHistoryByPeriod(string email, DateTime startPeriod,
+        DateTime endPeriod)
+    {
+        await using var context = new AppDbContext();
+
+        var historyList = await context.DbHistoryData
+            .Where(h => h.Data >= startPeriod && h.Data <= endPeriod)
+            .OrderByDescending(h => h.Data)
+            .ToListAsync();
+        
+        ConversationHistoryService conversationHistoryService = new ConversationHistoryService();
+        conversationHistoryService.SendConversationHistory(historyList, email);
+    }
 }
