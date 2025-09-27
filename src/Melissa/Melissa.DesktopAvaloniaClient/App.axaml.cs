@@ -28,6 +28,9 @@ public partial class App : Application
                 DataContext = new MainWindowViewModel(),
             };
         }
+        
+        var settings = new SetupSettings("settings.json");
+        settings.CreateSettingsFileIfNotExist();
 
         base.OnFrameworkInitializationCompleted();
     }

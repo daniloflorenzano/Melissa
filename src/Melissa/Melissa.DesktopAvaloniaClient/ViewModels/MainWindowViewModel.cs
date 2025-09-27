@@ -19,7 +19,7 @@ namespace Melissa.DesktopAvaloniaClient.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    [ObservableProperty] private string _melissaServerUrl = "http://localhost:5179";
+    [ObservableProperty] private string _melissaServerUrl;
     [ObservableProperty] private bool _isPlayingAudio;
     [ObservableProperty] private List<short> _audioWaveformData = [];
 
@@ -31,6 +31,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel()
     {
         _inputCallback = InputCallbackImpl;
+        _melissaServerUrl = SetupSettings.ReadServerAddress();
     }
 
     [RelayCommand]
