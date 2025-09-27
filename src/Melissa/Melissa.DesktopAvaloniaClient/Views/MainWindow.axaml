@@ -61,8 +61,8 @@
 
             <!-- O botão do microfone como a camada de baixo -->
             <Button x:Name="MicButton"
-                    Width="200"
-                    Height="200"
+                    Width="250"
+                    Height="250"
                     CornerRadius="250"
                     Background="Orange"
                     PointerPressed="OnMicButtonPressed"
@@ -71,7 +71,7 @@
 
             <!-- A visibilidade do canvas agora depende da propriedade IsPlayingAudio.
                  Ele será visível somente quando o áudio estiver sendo reproduzido. -->
-            <views:AudioWaveform Width="400" Height="400" IsVisible="{Binding IsPlayingAudio}" IsAnimating="{Binding IsPlayingAudio}"/>
+            <views:AudioWaveform Width="200" Height="200" IsVisible="{Binding IsPlayingAudio}" IsAnimating="{Binding IsPlayingAudio}"/>
         </Grid>
     </Grid>
 </Window>
