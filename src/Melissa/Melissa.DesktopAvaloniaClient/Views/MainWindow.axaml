@@ -29,10 +29,10 @@
 
             <!-- O botão do microfone como a camada de baixo -->
             <Button x:Name="MicButton"
-                    Width="500"
-                    Height="500"
+                    Width="200"
+                    Height="200"
                     CornerRadius="250"
-                    Background="GreenYellow"
+                    Background="Orange"
                     PointerPressed="OnMicButtonPressed"
                     PointerReleased="OnMicButtonReleased"
                     IsEnabled="{Binding !IsPlayingAudio}"/>

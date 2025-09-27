@@ -98,7 +98,7 @@ public partial class AudioWaveform : UserControl
         if (width <= 0 || height <= 0)
             return;
 
-        var pen = new Pen(Brushes.GreenYellow, 10);
+        var pen = new Pen(Brushes.Orange, 10);
         var maxVal = short.MaxValue;
         var center = height / 2;
 
