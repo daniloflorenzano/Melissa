@@ -28,13 +28,13 @@
                     BorderThickness="1"
                     Padding="8,4">
                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <Grid Width="10" Height="10">
+                    <Grid Width="30" Height="30">
                         <Ellipse Fill="{Binding ServerStatusColor}"/>
                     </Grid>
                     <TextBlock Text="{Binding ConnectionStatus}"
                                VerticalAlignment="Center"
                                Foreground="#2D3748"
-                               FontSize="12"/>
+                               FontSize="32"/>
                 </StackPanel>
             </Border>
 
@@ -48,8 +48,8 @@
                         Background="Transparent"
                         BorderThickness="0"
                         Padding="6,2"
-                        FontSize="18"
-                        Width="28" Height="28"
+                        FontSize="42"
+                        Width="50" Height="50"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         Command="{Binding OpenSettingsCommand}" />
@@ -61,8 +61,8 @@
 
             <!-- O botão do microfone como a camada de baixo -->
             <Button x:Name="MicButton"
-                    Width="250"
-                    Height="250"
+                    Width="300"
+                    Height="300"
                     CornerRadius="250"
                     Background="Orange"
                     PointerPressed="OnMicButtonPressed"
