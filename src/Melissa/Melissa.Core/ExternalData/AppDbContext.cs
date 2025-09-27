@@ -1,4 +1,5 @@
 using Melissa.Core.AiTools.Holidays;
+using Melissa.Core.AiTools.TaskList;
 using Melissa.WebServer;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,8 @@ public class AppDbContext : DbContext
 {
     public DbSet<Holiday> Holidays { get; set; }
     public DbSet<DbConversationHistory> DbHistoryData { get; set; }
+    public DbSet<Tasks> Tasks { get; set; }
+    public DbSet<TaskItens> TaskItens { get; set; }
 
     private string DbPath { get; }
     
