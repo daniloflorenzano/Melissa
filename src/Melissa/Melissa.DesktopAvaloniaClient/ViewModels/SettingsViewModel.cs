@@ -15,10 +15,6 @@ public partial class SettingsViewModel : ObservableObject
 
     public SettingsViewModel(string currentServerAddress, Action<bool> closeAction)
     {
-        var setupSettings = new SetupSettings();
-        setupSettings.CreateSettingsFileIfNotExist();
-        setupSettings.SaveNewServerAddress(currentServerAddress);
-        
         _serverAddress = currentServerAddress;
         _closeAction = closeAction;
     }
@@ -28,6 +24,9 @@ public partial class SettingsViewModel : ObservableObject
     private void Save()
     {
         // Chama a ação de fechar, passando 'true' para indicar que foi salvo
+        var setupSettings = new SetupSettings();
+        setupSettings.CreateSettingsFileIfNotExist();
+        setupSettings.SaveNewServerAddress(ServerAddress);
         _closeAction(true);
     }
 

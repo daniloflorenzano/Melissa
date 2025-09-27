@@ -62,7 +62,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _inputCallback = InputCallbackImpl;
         
         var setupSettings = new SetupSettings();
-        _melissaServerUrl = setupSettings.ReadServerAddress();
+        MelissaServerUrl = setupSettings.ReadServerAddress();
         
         SetConnectedStatus(false);
         StartHealthMonitor();
