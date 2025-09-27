@@ -16,14 +16,46 @@
 
     <Grid RowDefinitions="Auto, *" ColumnDefinitions="*, Auto">
 
-        <Button Grid.Row="0" Grid.Column="1"
-                Margin="10"
-                Content="⚙️"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Top"
-                FontSize="20"
-                Width="40" Height="40"
-                Command="{Binding OpenSettingsCommand}" />
+        <StackPanel Grid.Row="0" Grid.Column="1"
+                    Margin="10"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Spacing="8">
+            <Border CornerRadius="14"
+                    Background="#F7FAFC"
+                    BorderBrush="#CBD5E0"
+                    BorderThickness="1"
+                    Padding="8,4">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Grid Width="10" Height="10">
+                        <Ellipse Fill="{Binding ServerStatusColor}"/>
+                    </Grid>
+                    <TextBlock Text="{Binding ConnectionStatus}"
+                               VerticalAlignment="Center"
+                               Foreground="#2D3748"
+                               FontSize="12"/>
+                </StackPanel>
+            </Border>
+
+
+            <Border CornerRadius="14"
+                    Background="#F7FAFC"
+                    BorderBrush="#CBD5E0"
+                    BorderThickness="1"
+                    Padding="1,1">
+                <Button Content="⚙️"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="6,2"
+                        FontSize="18"
+                        Width="28" Height="28"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Command="{Binding OpenSettingsCommand}" />
+            </Border>
+
+        </StackPanel>
 
         <Grid Grid.Row="1" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center">
 

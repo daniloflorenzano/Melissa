@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.IO.Pipelines;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
@@ -22,11 +24,38 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private string _melissaServerUrl;
     [ObservableProperty] private bool _isPlayingAudio;
     [ObservableProperty] private List<short> _audioWaveformData = [];
+    [ObservableProperty] private string _connectionStatus;
+    [ObservableProperty] private bool _isConnected;
+    [ObservableProperty] private string _serverStatusColor;
 
     private HubConnection? _hubConnection;
     private Channel<byte[]>? _audioChannel;
     private readonly Stream.Callback _inputCallback;
     private Stream? _inputStream;
+    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(2) };
+    private CancellationTokenSource? _healthCts;
+
+    private const string Offline = "Sem conexão";
+    private const string OfflineColor = "#e5573e";
+    
+    private const string Connected = "Conectado";
+    private const string ConnectedColor = "#38A169";
+
+    private void SetConnectedStatus(bool isConnected)
+    {
+        if (isConnected)
+        {
+            IsConnected = true;
+            ConnectionStatus = Connected;
+            ServerStatusColor = ConnectedColor;
+        }
+        else
+        {
+            IsConnected = false;
+            ConnectionStatus = Offline;
+            ServerStatusColor = OfflineColor;
+        }
+    }
 
     public MainWindowViewModel()
     {
@@ -34,60 +63,74 @@ public partial class MainWindowViewModel : ViewModelBase
         
         var setupSettings = new SetupSettings();
         _melissaServerUrl = setupSettings.ReadServerAddress();
+        
+        SetConnectedStatus(false);
+        StartHealthMonitor();
+
     }
 
     [RelayCommand]
     public async Task StartAudioCaptureAsync()
     {
-        Console.WriteLine("[INFO] Iniciando captura de áudio e conexão com servidor...");
+        if (!IsConnected)
+            return;
 
-        _hubConnection = new HubConnectionBuilder()
-            .WithUrl($"{MelissaServerUrl}/melissa")
-            .Build();
-
-        await _hubConnection.StartAsync();
-        Console.WriteLine("[INFO] Conexão com SignalR iniciada.");
-
-        _audioChannel = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions
+        try
         {
-            SingleReader = true,
-            SingleWriter = false
-        });
+            Console.WriteLine("[INFO] Iniciando captura de áudio e conexão com servidor...");
 
-        _ = Task.Run(async () =>
-        {
-            Console.WriteLine("[INFO] Iniciando task de envio/recepção de áudio...");
-            var stream = _hubConnection.StreamAsync<byte[]>(
-                "AskMelissaAudio",
-                GetAudioStream(),
-                CancellationToken.None
-            );
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl($"{MelissaServerUrl}/melissa")
+                .Build();
 
-            var pipe = new System.IO.Pipelines.Pipe();
+            await _hubConnection.StartAsync();
+            Console.WriteLine("[INFO] Conexão com SignalR iniciada.");
 
-            var readTask = Task.Run(async () =>
+            _audioChannel = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions
             {
-                await foreach (var replyBytes in stream)
-                {
-                    await pipe.Writer.WriteAsync(replyBytes);
-
-                    // Atualiza a propriedade com uma cópia da janela
-                    Dispatcher.UIThread.Post(() => { IsPlayingAudio = true; });
-                }
-
-                await pipe.Writer.CompleteAsync();
+                SingleReader = true,
+                SingleWriter = false
             });
 
-            var player = new Mpg123Wrapper();
+            _ = Task.Run(async () =>
+            {
+                Console.WriteLine("[INFO] Iniciando task de envio/recepção de áudio...");
+                var stream = _hubConnection.StreamAsync<byte[]>(
+                    "AskMelissaAudio",
+                    GetAudioStream(),
+                    CancellationToken.None
+                );
 
-            await player.PlayAudioFromStreamAsync(pipe.Reader.AsStream());
-            IsPlayingAudio = false;
+                var pipe = new Pipe();
 
-            await readTask;
-        });
+                var readTask = Task.Run(async () =>
+                {
+                    await foreach (var replyBytes in stream)
+                    {
+                        await pipe.Writer.WriteAsync(replyBytes);
 
-        PortAudio.Initialize();
-        StartInputStream();
+                        // Atualiza a propriedade com uma cópia da janela
+                        Dispatcher.UIThread.Post(() => { IsPlayingAudio = true; });
+                    }
+
+                    await pipe.Writer.CompleteAsync();
+                });
+
+                var player = new Mpg123Wrapper();
+
+                await player.PlayAudioFromStreamAsync(pipe.Reader.AsStream());
+                IsPlayingAudio = false;
+
+                await readTask;
+            });
+
+            PortAudio.Initialize();
+            StartInputStream();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
     }
 
     private async IAsyncEnumerable<byte[]> GetAudioStream()
@@ -176,5 +219,76 @@ public partial class MainWindowViewModel : ViewModelBase
                 Console.WriteLine($"[INFO] URL do servidor atualizada para: {MelissaServerUrl}");
             }
         }
+    }
+    private void StartHealthMonitor()
+    {
+        StopHealthMonitor();
+
+        if (string.IsNullOrWhiteSpace(MelissaServerUrl))
+        {
+            Dispatcher.UIThread.Post(() => SetConnectedStatus(false));
+            return;
+        }
+
+        _healthCts = new CancellationTokenSource();
+        var token = _healthCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    var urlBase = MelissaServerUrl.TrimEnd('/');
+                    var url = $"{urlBase}/health";
+                    var resp = await Http.GetAsync(url, token);
+
+                    if (resp.IsSuccessStatusCode)
+                    {
+                        Dispatcher.UIThread.Post(() => SetConnectedStatus(true));
+                    }
+                    else
+                    {
+                        Dispatcher.UIThread.Post(() => SetConnectedStatus(false));
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // Ignora cancelamento
+                }
+                catch (Exception)
+                {
+                    Dispatcher.UIThread.Post(() => SetConnectedStatus(false));
+                }
+
+                try
+                {
+                    await Task.Delay(1000, token);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Ignora cancelamento
+                }
+            }
+        }, token);
+    }
+
+    private void StopHealthMonitor()
+    {
+        try
+        {
+            _healthCts?.Cancel();
+            _healthCts?.Dispose();
+        }
+        catch { /* ignore */ }
+        finally
+        {
+            _healthCts = null;
+        }
+    }
+
+    partial void OnMelissaServerUrlChanged(string value)
+    {
+        StartHealthMonitor();
     }
 }
