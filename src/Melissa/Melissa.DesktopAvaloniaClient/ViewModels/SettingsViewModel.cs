@@ -15,7 +15,7 @@ public partial class SettingsViewModel : ObservableObject
 
     public SettingsViewModel(string currentServerAddress, Action<bool> closeAction)
     {
-        var setupSettings = new SetupSettings("settings.json");
+        var setupSettings = new SetupSettings();
         setupSettings.CreateSettingsFileIfNotExist();
         setupSettings.SaveNewServerAddress(currentServerAddress);
         

@@ -3,12 +3,14 @@ using System.Text.Json;
 
 namespace Melissa.DesktopAvaloniaClient;
 
-public class SetupSettings(string settingsFilePath)
+public class SetupSettings(string? settingsFilePath = null)
 {
+    private readonly string _settingsFilePath = settingsFilePath ?? DefaultSettingsFilePath;
+
     public void CreateSettingsFileIfNotExist()
     {
-        if (!File.Exists(settingsFilePath)) 
-            File.WriteAllText(settingsFilePath, _defaultSettings);
+        if (!File.Exists(_settingsFilePath)) 
+            File.WriteAllText(_settingsFilePath, _defaultSettings);
     }
 
     public void SaveNewServerAddress(string serverAddress)
@@ -16,18 +18,21 @@ public class SetupSettings(string settingsFilePath)
         if (string.IsNullOrWhiteSpace(serverAddress)) 
             return;
         
-        var settings = File.ReadAllText(settingsFilePath);
+        var settings = File.ReadAllText(_settingsFilePath);
         var settingsObj = JsonSerializer.Deserialize<Settings>(settings);
         settingsObj!.ServerAddress = serverAddress;
-        File.WriteAllText(settingsFilePath, JsonSerializer.Serialize(settingsObj));
+        File.WriteAllText(_settingsFilePath, JsonSerializer.Serialize(settingsObj));
     }
 
-    public static string ReadServerAddress(string? settingsFilePath = null)
+    public string ReadServerAddress(string? settingsFilePath = null)
     {  
-        var settings = File.ReadAllText(settingsFilePath ?? "settings.json");
+        CreateSettingsFileIfNotExist();
+        
+        var settings = File.ReadAllText(settingsFilePath ?? DefaultSettingsFilePath);
         var settingsObj = JsonSerializer.Deserialize<Settings>(settings);
         return settingsObj?.ServerAddress ?? string.Empty;
     }
 
-    private readonly string _defaultSettings = JsonSerializer.Serialize(new Settings()); 
+    private readonly string _defaultSettings = JsonSerializer.Serialize(new Settings());
+    private const string DefaultSettingsFilePath = "settings.json";
 }

@@ -31,7 +31,9 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel()
     {
         _inputCallback = InputCallbackImpl;
-        _melissaServerUrl = SetupSettings.ReadServerAddress();
+        
+        var setupSettings = new SetupSettings();
+        _melissaServerUrl = setupSettings.ReadServerAddress();
     }
 
     [RelayCommand]
