@@ -111,14 +111,16 @@ public class AppEndpoints
     /// <param name="email"></param>
     /// <param name="taskId"></param>
     /// <param name="taskName"></param>
-    public static async Task SendTaskByEmail(string email, int taskId, string taskName)
+    public static async Task SendTaskByEmail(string email, int taskId)
     {
         var taskServive = new TaskListService();
+        
+        var taskDetails = await taskServive.GetTaskById(taskId);
 
         List<TaskItens> taskItems = await taskServive.GetTaskItensByTaskId(taskId);
 
         if (taskItems.Count > 0)
-            await taskServive.SendTaskByEmailAsync(email, taskItems, taskName);
+            await taskServive.SendTaskByEmailAsync(email, taskItems, taskDetails.Title);
     }
 
     /// <summary>

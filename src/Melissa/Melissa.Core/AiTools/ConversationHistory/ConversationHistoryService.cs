@@ -39,7 +39,7 @@ public class ConversationHistoryService
 
         var mailMessage = new MailMessage
         {
-            From = new MailAddress(config.Credenciais.UserName),
+            From = new MailAddress(config.Credenciais.UserName, "Melissa"),
             Subject = assunto,
             Body = corpo,
             IsBodyHtml = false,
