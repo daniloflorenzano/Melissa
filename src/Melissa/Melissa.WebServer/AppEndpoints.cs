@@ -3,14 +3,11 @@ using Melissa.Core.AiTools.Holidays;
 using Melissa.Core.AiTools.TaskList;
 using Melissa.Core.ExternalData;
 using Microsoft.EntityFrameworkCore;
-using Melissa.Core.ExternalData;
 
 namespace Melissa.WebServer;
 
 public class AppEndpoints
 {
-    static TaskListService TaskListService = new TaskListService();
-
     /// <summary>
     /// Retorna a temperatura atual de uma localização específica.
     /// </summary>
@@ -45,13 +42,14 @@ public class AppEndpoints
     /// <param name="taskTitle"></param>
     public static async Task AddNewTask(string taskTitle, string? taskDescription = null)
     {
+        TaskListService taskListService = new TaskListService();
         var task = new Tasks();
 
         task.Title = taskTitle;
         task.Description = taskDescription ?? "Nova Lista";
         task.IncludedAt = DateTime.Now;
 
-        await TaskListService.RegisterNewTask(task);
+        await taskListService.RegisterNewTask(task);
     }
 
     /// <summary>
@@ -61,6 +59,7 @@ public class AppEndpoints
     /// <param name="taskDescription"></param>
     public static async Task AddNewItemTask(int taskId, string taskDescription)
     {
+        TaskListService taskListService = new TaskListService();
         var taskItem = new TaskItens();
 
         taskItem.TaskId = taskId;
@@ -68,13 +67,14 @@ public class AppEndpoints
         taskItem.IncludedAt = DateTime.Now;
         taskItem.IsCompleted = false;
 
-        await TaskListService.AddNewTaskItemByTaskId(taskItem);
+        await taskListService.AddNewTaskItemByTaskId(taskItem);
     }
 
     // Cancela um item de uma tarefa.
     public static async Task CancelTaskItemById(int taskItenId, int taskId)
     {
-        await TaskListService.CancelTaskItemById(taskItenId, taskId);
+        TaskListService taskListService = new TaskListService();
+        await taskListService.CancelTaskItemById(taskItenId, taskId);
     }
 
     /// <summary>
@@ -83,7 +83,8 @@ public class AppEndpoints
     /// <returns></returns>
     public static async Task<List<Tasks>> GetAllTasks()
     {
-        return await TaskListService.GetAllTasks();
+        TaskListService taskListService = new TaskListService();
+        return await taskListService.GetAllTasks();
     }
 
     /// <summary>
@@ -93,7 +94,8 @@ public class AppEndpoints
     /// <returns></returns>
     public static async Task<List<TaskItens>> GetAllItensByTaskId(int taskId)
     {
-        return await TaskListService.GetTaskItensByTaskId(taskId);
+        TaskListService taskListService = new TaskListService();
+        return await taskListService.GetTaskItensByTaskId(taskId);
     }
 
     /// <summary>
@@ -102,7 +104,8 @@ public class AppEndpoints
     /// <param name="taskItenId"></param>
     public static async Task CompleteItemTask(int taskItenId)
     {
-        await TaskListService.UpdateCompleteStatusTaskItem(taskItenId);
+        TaskListService taskListService = new TaskListService();
+        await taskListService.UpdateCompleteStatusTaskItem(taskItenId);
     }
 
     /// <summary>
@@ -129,7 +132,8 @@ public class AppEndpoints
     /// <param name="taskId"></param>
     public static async Task ArchiveTaskById(int taskId)
     {
-        await TaskListService.ArchiveTaskById(taskId);
+        TaskListService taskListService = new TaskListService();
+        await taskListService.ArchiveTaskById(taskId);
     }
 
     /// <summary>
@@ -138,7 +142,8 @@ public class AppEndpoints
     /// <param name="taskId"></param>
     public static async Task UnarchiveTaskById(int taskId)
     {
-        await TaskListService.UnarchiveTaskById(taskId);
+        TaskListService taskListService = new TaskListService();
+        await taskListService.UnarchiveTaskById(taskId);
     }
 
     #endregion
