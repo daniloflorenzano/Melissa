@@ -42,4 +42,18 @@ app.MapHub<MelissaHub>("/melissa");
 
 app.MapPost("/melissa/AskMelissaAudio", AudioEndpoints.AskMelissaAudio);
 
+app.MapGet("/health",  async context =>
+{
+    var melissaStatus = await melissa.CanUse();
+    if (melissaStatus.isAvailable)
+    {
+        context.Response.StatusCode = 200;
+        await context.Response.WriteAsync("OK");
+        return;
+    }
+    
+    context.Response.StatusCode = 500;
+    await context.Response.WriteAsync(melissaStatus.statusMessage);
+});
+
 app.Run();
