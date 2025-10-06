@@ -3,6 +3,7 @@ using System;
 using Melissa.Core.ExternalData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Melissa.Infraestructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250921232534_MakeCompletedAtNullable")]
+    partial class MakeCompletedAtNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.4");
@@ -53,9 +56,6 @@ namespace Melissa.Infraestructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("CanceledAt")
-                        .HasColumnType("TEXT");
-
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("TEXT");
 
@@ -65,9 +65,6 @@ namespace Melissa.Infraestructure.Migrations
 
                     b.Property<DateTime>("IncludedAt")
                         .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsCanceled")
-                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsCompleted")
                         .HasColumnType("INTEGER");
@@ -92,9 +89,6 @@ namespace Melissa.Infraestructure.Migrations
 
                     b.Property<DateTime>("IncludedAt")
                         .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsArchived")
-                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Title")
                         .IsRequired()

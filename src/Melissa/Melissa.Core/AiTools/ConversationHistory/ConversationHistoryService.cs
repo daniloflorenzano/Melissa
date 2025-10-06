@@ -2,15 +2,20 @@
 using System.Net.Mail;
 using System.Text;
 using System.Text.Json;
+using Melissa.Core.ExternalData;
 using Melissa.WebServer.Email;
+using Microsoft.EntityFrameworkCore;
 
 namespace Melissa.WebServer;
 
 public class ConversationHistoryService
 {
-    public void SendConversationHistory(List<DbConversationHistory> historyList)
+    public void SendConversationHistory(List<DbConversationHistory> historyList, string? email = null)
     {
         var config = ReadEmailConfig();
+
+        if (email != null)
+            config.Destinatarios = [email];
 
         var assunto = "Histórico de conversa - Melissa";
 
@@ -34,7 +39,7 @@ public class ConversationHistoryService
 
         var mailMessage = new MailMessage
         {
-            From = new MailAddress(config.Credenciais.UserName),
+            From = new MailAddress(config.Credenciais.UserName, "Melissa"),
             Subject = assunto,
             Body = corpo,
             IsBodyHtml = false,

@@ -42,6 +42,41 @@ app.MapHub<MelissaHub>("/melissa");
 
 app.MapPost("/melissa/AskMelissaAudio", AudioEndpoints.AskMelissaAudio);
 
+// Rotas de ferramentas
+app.MapGet("/melissa/GetCurrentTemperatureByLocation",  async (string location) => await AppEndpoints.GetCurrentWeatherByLocalizationAsync(location));
+app.MapGet("/melissa/ExportNationalHolidaysToTxt", AppEndpoints.ExportNationalHolidaysToTxt);
+
+#region Tarefas
+
+// AddNewTask
+app.MapPost("/melissa/AddNewTask", AppEndpoints.AddNewTask);
+
+// AddNewItenTask
+app.MapPost("/melissa/AddNewItenTask", AppEndpoints.AddNewItemTask);
+
+// CancelTaskItemById
+app.MapPost("/melissa/CancelTaskItemById", AppEndpoints.CancelTaskItemById);
+
+// GetAllTasks
+app.MapGet("/melissa/GetAllTasks", AppEndpoints.GetAllTasks);
+
+// GetAllItensTasks
+app.MapGet("/melissa/GetAllItensTasks", AppEndpoints.GetAllItensByTaskId);
+
+// CompleteItenTask
+app.MapPost("/melissa/CompleteItemTask", AppEndpoints.CompleteItemTask);
+
+// SendTaskByEmail
+app.MapPost("/melissa/SendTaskByEmail", AppEndpoints.SendTaskByEmail);
+
+app.MapPost("/melissa/ArchiveTaskById", AppEndpoints.ArchiveTaskById);
+
+app.MapPost("/melissa/UnarchiveTaskById", AppEndpoints.UnarchiveTaskById);
+
+#endregion
+
+app.MapPost("/melissa/SendEmailConversationHistoryByPeriod", AppEndpoints.SendEmailConversationHistoryByPeriod);
+
 app.MapGet("/health",  async context =>
 {
     var melissaStatus = await melissa.CanUse();

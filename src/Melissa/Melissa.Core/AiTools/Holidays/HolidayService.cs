@@ -164,4 +164,25 @@ public class HolidayService
                 h.Type == HolidayType.State ? 1 : 2)
             .FirstOrDefaultAsync();
     }
+    
+    /// <summary>
+    /// Cria um arquivo .txt com todos os feriados nacionais.
+    /// </summary>
+    /// <param name="filePath"></param>
+    public async Task ExportNationalHolidaysToTxt()
+    {
+        var filePath = @"C:\dev\App Mobile\Utils\holidays.txt";
+        var nationalHolidays = await _dbContext.Holidays
+            .Where(h => h.Type == HolidayType.National)
+            .OrderBy(h => h.Date)
+            .ToListAsync();
+
+        using (var writer = new StreamWriter(filePath))
+        {
+            foreach (var holiday in nationalHolidays)
+            {
+                writer.WriteLine($"{holiday.Description}: {holiday.Date:dd/MM/yyyy}");
+            }
+        }
+    }
 }

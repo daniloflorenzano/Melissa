@@ -102,7 +102,7 @@ public class TaskListOllamaTools
         {
             sb.AppendLine($"Descrição: {item.Description}");
             sb.AppendLine($"Data de criação: {item.IncludedAt:dd/MM/yyyy HH:mm}");
-            sb.AppendLine($"Completado em: {(item.IsCompleted ? item.CompletedAt.ToString("dd/MM/yyyy HH:mm") : "Não completado")}");
+            sb.AppendLine($"Completado em: {(item.IsCompleted ? item.CompletedAt?.ToString("dd/MM/yyyy HH:mm") : "Não completado")}");
             sb.AppendLine();
         }
 

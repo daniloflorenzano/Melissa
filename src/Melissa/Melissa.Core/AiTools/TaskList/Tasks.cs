@@ -5,4 +5,5 @@ public class Tasks
     public string Title { get; set; }
     public string Description { get; set; }
     public DateTime IncludedAt { get; set; }
+    public bool IsArchived {get; set;}
 }
