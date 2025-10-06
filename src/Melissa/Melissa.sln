@@ -1,0 +1,38 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Melissa.Core", "Melissa.Core\Melissa.Core.csproj", "{7550C11A-FD2A-EBF2-8D7B-579B826A85BB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Melissa.DesktopAvaloniaClient", "Melissa.DesktopAvaloniaClient\Melissa.DesktopAvaloniaClient.csproj", "{4E51CA19-FC19-EDA2-A11B-2401C70C9007}"
+EndProject
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Melissa.WebServer", "Melissa.WebServer\Melissa.WebServer.csproj", "{02E43518-6676-81E0-4049-3D93445E749E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F8319D88-45EE-64AE-BA94-C1120E84B205}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8319D88-45EE-64AE-BA94-C1120E84B205}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8319D88-45EE-64AE-BA94-C1120E84B205}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8319D88-45EE-64AE-BA94-C1120E84B205}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7550C11A-FD2A-EBF2-8D7B-579B826A85BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7550C11A-FD2A-EBF2-8D7B-579B826A85BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7550C11A-FD2A-EBF2-8D7B-579B826A85BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7550C11A-FD2A-EBF2-8D7B-579B826A85BB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E51CA19-FC19-EDA2-A11B-2401C70C9007}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E51CA19-FC19-EDA2-A11B-2401C70C9007}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E51CA19-FC19-EDA2-A11B-2401C70C9007}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E51CA19-FC19-EDA2-A11B-2401C70C9007}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2C86D66-ED52-E49C-2466-D4A596456598}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2C86D66-ED52-E49C-2466-D4A596456598}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2C86D66-ED52-E49C-2466-D4A596456598}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2C86D66-ED52-E49C-2466-D4A596456598}.Release|Any CPU.Build.0 = Release|Any CPU
+		{02E43518-6676-81E0-4049-3D93445E749E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{02E43518-6676-81E0-4049-3D93445E749E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{02E43518-6676-81E0-4049-3D93445E749E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{02E43518-6676-81E0-4049-3D93445E749E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

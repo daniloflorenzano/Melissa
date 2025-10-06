@@ -75,9 +75,20 @@ app.MapPost("/melissa/UnarchiveTaskById", AppEndpoints.UnarchiveTaskById);
 
 #endregion
 
-
 app.MapPost("/melissa/SendEmailConversationHistoryByPeriod", AppEndpoints.SendEmailConversationHistoryByPeriod);
 
-
+app.MapGet("/health",  async context =>
+{
+    var melissaStatus = await melissa.CanUse();
+    if (melissaStatus.isAvailable)
+    {
+        context.Response.StatusCode = 200;
+        await context.Response.WriteAsync("OK");
+        return;
+    }
+    
+    context.Response.StatusCode = 500;
+    await context.Response.WriteAsync(melissaStatus.statusMessage);
+});
 
 app.Run();

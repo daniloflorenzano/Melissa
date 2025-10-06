@@ -1,0 +1,77 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Melissa.DesktopAvaloniaClient.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="clr-namespace:Melissa.DesktopAvaloniaClient.Views"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="Melissa.DesktopAvaloniaClient.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="Melissa.DesktopAvaloniaClient">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto, *" ColumnDefinitions="*, Auto">
+
+        <StackPanel Grid.Row="0" Grid.Column="1"
+                    Margin="10"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Spacing="8">
+            <Border CornerRadius="14"
+                    Background="#F7FAFC"
+                    BorderBrush="#CBD5E0"
+                    BorderThickness="1"
+                    Padding="8,4">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Grid Width="30" Height="30">
+                        <Ellipse Fill="{Binding ServerStatusColor}"/>
+                    </Grid>
+                    <TextBlock Text="{Binding ConnectionStatus}"
+                               VerticalAlignment="Center"
+                               Foreground="#2D3748"
+                               FontSize="32"/>
+                </StackPanel>
+            </Border>
+
+
+            <Border CornerRadius="14"
+                    Background="#F7FAFC"
+                    BorderBrush="#CBD5E0"
+                    BorderThickness="1"
+                    Padding="1,1">
+                <Button Content="⚙️"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="6,2"
+                        FontSize="42"
+                        Width="50" Height="50"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Command="{Binding OpenSettingsCommand}" />
+            </Border>
+
+        </StackPanel>
+
+        <Grid Grid.Row="1" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center">
+
+            <!-- O botão do microfone como a camada de baixo -->
+            <Button x:Name="MicButton"
+                    Width="300"
+                    Height="300"
+                    CornerRadius="250"
+                    Background="Orange"
+                    PointerPressed="OnMicButtonPressed"
+                    PointerReleased="OnMicButtonReleased"
+                    IsEnabled="{Binding !IsPlayingAudio}"/>
+
+            <!-- A visibilidade do canvas agora depende da propriedade IsPlayingAudio.
+                 Ele será visível somente quando o áudio estiver sendo reproduzido. -->
+            <views:AudioWaveform Width="200" Height="200" IsVisible="{Binding IsPlayingAudio}" IsAnimating="{Binding IsPlayingAudio}"/>
+        </Grid>
+    </Grid>
+</Window>
