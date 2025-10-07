@@ -3,9 +3,14 @@ using Melissa.Core.Assistants;
 using Melissa.Core.ExternalData;
 using Melissa.WebServer;
 using Serilog;
+using FFMpegCore;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddSignalR(options => { options.DisableImplicitFromServicesParameters = true; });
+builder.Services.AddSignalR(options =>
+{
+    options.DisableImplicitFromServicesParameters = true;
+    options.MaximumReceiveMessageSize = 50 * 1024 * 1024;
+});
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -16,6 +21,11 @@ var melissa = await assistantFactory.TryCreateMelissa(TimeSpan.FromSeconds(10));
 
 // A assistente precisa ser um Singleton para ser persistido o contexto da conversa
 builder.Services.AddSingleton(melissa);
+
+GlobalFFOptions.Configure(new FFOptions
+{
+    TemporaryFilesFolder = Path.GetTempPath()
+});
 
 var allUNeedApiBaseAddress = builder.Configuration.GetValue<string>("AllUNeedApiUrl");
 if (string.IsNullOrEmpty(allUNeedApiBaseAddress))

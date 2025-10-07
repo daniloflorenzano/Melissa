@@ -10,6 +10,9 @@ using Serilog;
 using Whisper.net;
 using Whisper.net.Ggml;
 using MelissaAssistant = Melissa.Core.Assistants.Melissa;
+using FFMpegCore;
+using FFMpegCore.Pipes;
+
 
 namespace Melissa.WebServer;
 
@@ -29,41 +32,42 @@ public class MelissaHub : Hub
         }
     }
 
-    public async IAsyncEnumerable<byte[]> AskMelissaAudio(IAsyncEnumerable<byte[]> audioStream,
+    public async IAsyncEnumerable<byte[]> AskMelissaAudio(
+        IAsyncEnumerable<byte[]> audioStream,
         [FromServices] MelissaAssistant melissa,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         using var ms = new MemoryStream();
-
         await foreach (var chunk in audioStream.WithCancellation(cancellationToken))
-        {
             await ms.WriteAsync(chunk, cancellationToken);
-        }
 
+        var inputBytes = ms.ToArray();
+        var kind = DetectAudioKind(inputBytes);
+
+        // Normaliza para WAV 16k mono s16le somente quando necessário
+        byte[] wavBytes = kind switch
+        {
+            AudioKind.Wav => inputBytes,
+            AudioKind.M4a => await TranscodeToWavAsync(inputBytes, cancellationToken),
+            _ => GenerateWav(inputBytes, 16000, 16, 1)
+        };
+        
         var ggmlType = GgmlType.Medium;
         var modelFileName = "ggml-medium.bin";
-
         if (!File.Exists(modelFileName))
-        {
             await DownloadModel(modelFileName, ggmlType);
-        }
 
-        using var whisperFactory = WhisperFactory.FromPath("ggml-medium.bin");
+        using var whisperFactory = WhisperFactory.FromPath(modelFileName);
         await using var processor = whisperFactory.CreateBuilder()
             .WithLanguage("pt")
             .Build();
 
-        var pcmBytes = ms.ToArray();
-        var wavBytes = GenerateWav(pcmBytes);
-
-        var wavStream = new MemoryStream(wavBytes);
+        using var wavStream = new MemoryStream(wavBytes);
         wavStream.Seek(0, SeekOrigin.Begin);
 
         var msgBuilder = new StringBuilder();
         await foreach (var result in processor.ProcessAsync(wavStream, cancellationToken))
-        {
             msgBuilder.Append(result.Text);
-        }
 
         var message = msgBuilder.ToString();
         Log.Information("Usuário: {0}", message);
@@ -72,49 +76,99 @@ public class MelissaHub : Hub
         string melissaReply;
         var (isAvailable, statusMessage) = await melissa.CanUse();
 
-        if (isAvailable)
-            melissaReply =
-                await MelissaHub.SafeAskMelissaWithErrorHandlingAndRetry(melissa, question, cancellationToken);
-        else
-            melissaReply = statusMessage;
-
+        melissaReply = isAvailable
+            ? await SafeAskMelissaWithErrorHandlingAndRetry(melissa, question, cancellationToken)
+            : statusMessage;
 
         var edgeTts = new EdgeTTSNet();
-
         var voices = await edgeTts.GetVoices();
         var cnVoice = voices.FirstOrDefault(v => v.ShortName == "pt-BR-FranciscaNeural");
-        var options = new TTSOption
-        (
-            voice: cnVoice!.Name,
-            pitch: "+0Hz",
-            rate: "+25%",
-            volume: "+0%"
-        );
-
+        var options = new TTSOption(voice: cnVoice!.Name, pitch: "+0Hz", rate: "+25%", volume: "+0%");
         Log.Information("Assistente: {0}", melissaReply);
-
 
         edgeTts = new EdgeTTSNet(options);
         var channel = Channel.CreateUnbounded<byte[]>();
 
         _ = Task.Run(async () =>
         {
-            await edgeTts.TTS(melissaReply, (metaObj) =>
+            await edgeTts.TTS(melissaReply, meta =>
             {
-                if (metaObj.Type == TTSMetadataType.Audio)
-                {
-                    channel.Writer.TryWrite(metaObj.Data);
-                }
+                if (meta.Type == TTSMetadataType.Audio)
+                    channel.Writer.TryWrite(meta.Data);
             }, cancellationToken);
-
             channel.Writer.Complete();
         }, cancellationToken);
 
         await foreach (var audioChunk in channel.Reader.ReadAllAsync(cancellationToken))
-        {
             yield return audioChunk;
-        }
     }
+    
+    private enum AudioKind
+    {
+        Wav,
+        M4a,
+        PcmRaw
+    }
+
+    private static AudioKind DetectAudioKind(byte[] data)
+    {
+        // WAV
+        if (data.Length >= 12 &&
+            data[0] == (byte)'R' && data[1] == (byte)'I' && data[2] == (byte)'F' && data[3] == (byte)'F' &&
+            data[8] == (byte)'W' && data[9] == (byte)'A' && data[10] == (byte)'V' && data[11] == (byte)'E')
+            return AudioKind.Wav;
+
+        // MP4/M4A
+        if (data.Length >= 12 &&
+            data[4] == (byte)'f' && data[5] == (byte)'t' && data[6] == (byte)'y' && data[7] == (byte)'p')
+            return AudioKind.M4a;
+
+        return AudioKind.PcmRaw;
+    }
+
+    private static async Task<byte[]> TranscodeToWavAsync(byte[] input, CancellationToken ct)
+    {
+        using var inStream = new MemoryStream(input);
+        using var outStream = new MemoryStream();
+
+        var args = FFMpegArguments
+            .FromPipeInput(new StreamPipeSource(inStream))
+            .OutputToPipe(new StreamPipeSink(outStream), opts => opts
+                .WithAudioCodec("pcm_s16le") // PCM 16-bit little-endian
+                .WithAudioSamplingRate(16000) // 16 kHz
+                .WithCustomArgument("-ac 1") // 1 canal (mono)
+                .ForceFormat("wav"))
+            .NotifyOnError(line =>
+            {
+                if (line.Contains("Skipping unhandled metadata") ||
+                    line.Contains("Error during demuxing: Invalid argument") ||
+                    line.StartsWith("ffmpeg version") ||
+                    line.StartsWith("  libav") ||
+                    line.StartsWith("Input #0") ||
+                    line.StartsWith("Output #0") ||
+                    line.StartsWith("Stream "))
+                {
+                    Log.Debug("FFmpeg: {Line}", line);
+                }
+                else
+                {
+                    Log.Warning("FFmpeg: {Line}", line);
+                }
+            });
+        
+        await args
+            .CancellableThrough(ct)
+            .ProcessAsynchronously();
+        
+        var wav = outStream.ToArray();
+        if (wav.Length < 64)
+        {
+            Log.Error("FFmpeg: WAV muito pequeno ({Len} bytes) – provável falha ao transcodar.", wav.Length);
+        }
+        
+        return outStream.ToArray();
+    }
+
 
     private static byte[] GenerateWav(byte[] pcmData, int sampleRate = 16000, short bitsPerSample = 16,
         short channels = 1)
