@@ -24,7 +24,10 @@ public class OllamaChatBuilder : IChatBuilder
     {
         try
         {
-            var uri = new Uri("http://localhost:11434");
+            var baseUrl = Environment.GetEnvironmentVariable("OLLAMA_URL") 
+                          ?? Environment.GetEnvironmentVariable("OllamaUrl") 
+                          ?? "http://localhost:11434";
+            var uri = new Uri(baseUrl);
             var ollama = new OllamaApiClient(uri);
 
             var modelName = $"{EnumHelper.GetEnumDescription(ModelName)}:latest";

@@ -1,7 +1,12 @@
 ﻿<Solution>
-  <Project Path="Melissa.ConsoleClient\Melissa.ConsoleClient.csproj" Type="Classic C#" />
-  <Project Path="Melissa.Core\Melissa.Core.csproj" Type="Classic C#" />
-  <Project Path="Melissa.DesktopAvaloniaClient\Melissa.DesktopAvaloniaClient.csproj" Type="Classic C#" />
-  <Project Path="Melissa.DesktopClient\Melissa.DesktopClient.csproj" Type="Classic C#" />
-  <Project Path="Melissa.WebServer\Melissa.WebServer.csproj" Type="Classic C#" />
+  <Folder Name="/Solution Items/">
+    <File Path="compose.yaml" />
+    <File Path="Dockerfile" />
+    <File Path="identifier.sqlite" />
+  </Folder>
+  <Project Path="Melissa.ConsoleClient\Melissa.ConsoleClient.csproj" />
+  <Project Path="Melissa.Core\Melissa.Core.csproj" />
+  <Project Path="Melissa.DesktopAvaloniaClient\Melissa.DesktopAvaloniaClient.csproj" />
+  <Project Path="Melissa.DesktopClient\Melissa.DesktopClient.csproj" />
+  <Project Path="Melissa.WebServer\Melissa.WebServer.csproj" />
 </Solution>
