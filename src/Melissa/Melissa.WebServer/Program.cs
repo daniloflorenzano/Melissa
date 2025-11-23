@@ -18,13 +18,15 @@ var melissa = await assistantFactory.TryCreateMelissa(TimeSpan.FromSeconds(10));
 builder.Services.AddSingleton(melissa);
 
 var allUNeedApiBaseAddress = builder.Configuration.GetValue<string>("AllUNeedApiUrl");
-if (string.IsNullOrEmpty(allUNeedApiBaseAddress))
-    throw new InvalidOperationException("AllUNeedApiBaseAddress não está configurado.");
-
 var allUNeedApiKey = builder.Configuration.GetValue<string>("AllUNeedApiKey");
 
+if (string.IsNullOrEmpty(allUNeedApiBaseAddress))
+    Log.Warning("AllUNeedApiBaseAddress não está configurado. Algumas funcionalidades podem não funcionar corretamente.");
+else if (string.IsNullOrEmpty(allUNeedApiKey))
+    Log.Warning("AllUNeedApiKey não está configurado. Algumas funcionalidades podem não funcionar corretamente.");
+
 var allUNeedApiOptions = AllUNeedApiOptions.GetInstance();
-allUNeedApiOptions.BaseAddress = allUNeedApiBaseAddress;
+allUNeedApiOptions.BaseAddress = allUNeedApiBaseAddress ?? string.Empty;
 allUNeedApiOptions.ApiKey = allUNeedApiKey ?? string.Empty;
 
 var app = builder.Build();
