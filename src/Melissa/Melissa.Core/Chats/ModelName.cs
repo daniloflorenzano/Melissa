@@ -13,5 +13,8 @@ public enum ModelName
     [Description("llama3.2:3b")]
     Llama32_3B,
     Llama31,
-    Mistral
+    Mistral,
+    
+    [Description("qwen3:8b")]
+    Qwen3_8B,
 }

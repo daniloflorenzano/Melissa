@@ -23,7 +23,7 @@ public class AssistantFactory
         while (true)
         {
             try
-            {
+            {   
                 var melissa = new Melissa(_builder);
                 Log.Information("Melissa iniciada");
                 return melissa;
