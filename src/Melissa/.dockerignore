@@ -1,3 +1,9 @@
+Melissa.WebServer/ggml-medium.bin
+libggml*
+*.log
+*.tmp
+.cache/
+*.db
 **/.dockerignore
 **/.env
 **/.git

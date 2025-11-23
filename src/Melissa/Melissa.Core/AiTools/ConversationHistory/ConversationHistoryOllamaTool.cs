@@ -1,9 +1,4 @@
-﻿using System.Net;
-using System.Net.Mail;
-using System.Text;
-using System.Text.Json;
-using Melissa.Core.ExternalData;
-using Melissa.WebServer.Email;
+﻿using Melissa.Core.ExternalData;
 using Microsoft.EntityFrameworkCore;
 using OllamaSharp;
 using Serilog;

@@ -1,0 +1,32 @@
+﻿services:
+  melissa.webserver:
+    image: melissa.web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: melissa_webserver
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    depends_on:
+      - ollama
+    environment:
+      - HolidaysCsvPath=/app/Data/holidays_2025.csv
+      - AllUNeedApiUrl=https://alluneed.com.br/api/
+      - AllUNeedApiKey=
+      - OLLAMA_URL=http://ollama:11434
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: melissa_ollama
+    ports:
+      - "11434"
+    restart: unless-stopped
+    
+networks:
+    default:
+        driver: bridge
+
+volumes:
+  melissa_data:
+    driver: local

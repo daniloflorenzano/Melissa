@@ -2,9 +2,7 @@
 using System.Net.Mail;
 using System.Text;
 using System.Text.Json;
-using Melissa.Core.ExternalData;
 using Melissa.WebServer.Email;
-using Microsoft.EntityFrameworkCore;
 
 namespace Melissa.WebServer;
 

@@ -18,25 +18,39 @@ var melissa = await assistantFactory.TryCreateMelissa(TimeSpan.FromSeconds(10));
 builder.Services.AddSingleton(melissa);
 
 var allUNeedApiBaseAddress = builder.Configuration.GetValue<string>("AllUNeedApiUrl");
-if (string.IsNullOrEmpty(allUNeedApiBaseAddress))
-    throw new InvalidOperationException("AllUNeedApiBaseAddress não está configurado.");
-
 var allUNeedApiKey = builder.Configuration.GetValue<string>("AllUNeedApiKey");
 
+const string someFunctionalityMayNotWorkWarning = "Algumas funcionalidades podem não funcionar corretamente.";
+
+if (string.IsNullOrEmpty(allUNeedApiBaseAddress))
+    Log.Warning("AllUNeedApiBaseAddress não está configurado. {SomeFunctionalityMayNotWorkWarning}", someFunctionalityMayNotWorkWarning);
+else if (string.IsNullOrEmpty(allUNeedApiKey))
+    Log.Warning("AllUNeedApiKey não está configurado. {SomeFunctionalityMayNotWorkWarning}", someFunctionalityMayNotWorkWarning);
+
 var allUNeedApiOptions = AllUNeedApiOptions.GetInstance();
-allUNeedApiOptions.BaseAddress = allUNeedApiBaseAddress;
+allUNeedApiOptions.BaseAddress = allUNeedApiBaseAddress ?? string.Empty;
 allUNeedApiOptions.ApiKey = allUNeedApiKey ?? string.Empty;
 
 var app = builder.Build();
 
-// TODO: pensar em como fazer quando tornar a aplicação em uma imagem docker
-var holidaysCsvPath = Path.Combine(
-    PathUtils.TryGetSolutionDirectoryInfo().Parent!.Parent!.FullName,
-    "data",
-    app.Configuration.GetValue<string>("HolidaysCsvName")!
-);
+var holidaysCsvSetting = app.Configuration.GetValue<string>("HolidaysCsvPath") ?? "data/holidays_2025.csv";
 
-await DatabaseFeeder.FeedHolidays(holidaysCsvPath);
+string holidaysCsvPath;
+if (Path.IsPathRooted(holidaysCsvSetting))
+{
+    holidaysCsvPath = holidaysCsvSetting;
+}
+else
+{
+    var normalized = holidaysCsvSetting.Replace('/', Path.DirectorySeparatorChar).Replace("\\", Path.DirectorySeparatorChar.ToString());
+    holidaysCsvPath = Path.Combine(app.Environment.ContentRootPath, normalized);
+}
+
+if (!File.Exists(holidaysCsvPath))
+    Log.Warning("Arquivo de feriados não encontrado: {Path}. {SomeFunctionalityMayNotWorkWarning}", holidaysCsvPath,
+        someFunctionalityMayNotWorkWarning);
+else
+    await DatabaseFeeder.FeedHolidays(holidaysCsvPath);
 
 app.MapHub<MelissaHub>("/melissa");
 

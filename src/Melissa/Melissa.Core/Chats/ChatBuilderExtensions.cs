@@ -24,4 +24,41 @@ public static class ChatBuilderExtensions
         builder.ModelName = modelName;
         return builder;
     }
+    
+    /// <summary>
+    /// Defina o modelo de origem como {modelFrom}.
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="modelFrom"></param>
+    /// <returns></returns>
+    public static IChatBuilder WithModelFrom(this IChatBuilder builder, ModelName modelFrom)
+    {
+        builder.ModelFrom = modelFrom;
+        return builder;
+    }
+    
+    /// <summary>
+    /// Defina o parâmetro {key} com o valor {value}.
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="key"></param>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public static IChatBuilder WithParameter(this IChatBuilder builder, string key, object value)
+    {
+        builder.Parameters[key] = value;
+        return builder;
+    }
+    
+    /// <summary>
+    /// Defina a mensagem do sistema como {systemMessage}.
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="systemMessage"></param>
+    /// <returns></returns>
+    public static IChatBuilder WithSystemMessage(this IChatBuilder builder, string systemMessage)
+    {
+        builder.SystemMessage = systemMessage;
+        return builder;
+    }
 }

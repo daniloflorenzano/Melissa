@@ -1,4 +1,3 @@
-using CsvHelper.Configuration.Attributes;
 using DefaultNamespace;
 using OllamaSharp;
 using Serilog;
