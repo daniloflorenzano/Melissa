@@ -11,7 +11,6 @@
     depends_on:
       - ollama
     environment:
-      - HolidaysCsvPath=/app/Data/holidays_2025.csv
       - AllUNeedApiUrl=https://alluneed.com.br/api/
       - AllUNeedApiKey=
       - OLLAMA_URL=http://ollama:11434

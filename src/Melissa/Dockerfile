@@ -30,7 +30,12 @@ ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./Melissa.WebServer.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
+USER root
 WORKDIR /app
 COPY --from=publish /app/publish .
-#COPY ./Melissa.WebServer/Data/holidays_2025.csv ./app/data/holidays_2025.csv
+# Copiar arquivo de feriados para o container
+RUN mkdir -p /app/Data
+COPY ./Melissa.WebServer/Data/holidays_2025.csv /app/Data/holidays_2025.csv
+RUN chown -R appuser:appgroup /app/Data
+USER appuser
 ENTRYPOINT ["dotnet", "Melissa.WebServer.dll"]

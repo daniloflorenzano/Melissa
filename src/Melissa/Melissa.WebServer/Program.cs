@@ -2,10 +2,26 @@ using Melissa.Core.AiTools.Localization;
 using Melissa.Core.Assistants;
 using Melissa.Core.ExternalData;
 using Melissa.WebServer;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSignalR(options => { options.DisableImplicitFromServicesParameters = true; });
+
+// Registrar DbContext no DI container
+builder.Services.AddDbContext<AppDbContext>();
+
+// Adicionar configuração de CORS para permitir requisições do app mobile
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true) // Permite qualquer origem
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials(); // Necessário para SignalR
+    });
+});
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -33,6 +49,25 @@ allUNeedApiOptions.ApiKey = allUNeedApiKey ?? string.Empty;
 
 var app = builder.Build();
 
+// Aplicar migrations automaticamente no startup
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try
+    {
+        Log.Information("Aplicando migrations do banco de dados...");
+        dbContext.Database.Migrate();
+        Log.Information("Migrations aplicadas com sucesso!");
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Erro ao aplicar migrations do banco de dados.");
+    }
+}
+
+// Habilitar CORS
+app.UseCors();
+
 var holidaysCsvSetting = app.Configuration.GetValue<string>("HolidaysCsvPath") ?? "data/holidays_2025.csv";
 
 string holidaysCsvPath;
@@ -58,7 +93,7 @@ app.MapPost("/melissa/AskMelissaAudio", AudioEndpoints.AskMelissaAudio);
 
 // Rotas de ferramentas
 app.MapGet("/melissa/GetCurrentTemperatureByLocation",  async (string location) => await AppEndpoints.GetCurrentWeatherByLocalizationAsync(location));
-app.MapGet("/melissa/ExportNationalHolidaysToTxt", AppEndpoints.ExportNationalHolidaysToTxt);
+app.MapGet("/melissa/ExportNationalHolidaysToTxt", async () => await AppEndpoints.GetNationalHolidaysAsTxt());
 
 #region Tarefas
 
