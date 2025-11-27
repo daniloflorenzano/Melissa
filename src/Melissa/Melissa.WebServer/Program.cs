@@ -30,6 +30,8 @@ Log.Logger = new LoggerConfiguration()
 var assistantFactory = new AssistantFactory();
 var melissa = await assistantFactory.TryCreateMelissa(TimeSpan.FromSeconds(10));
 
+await MelissaHub.DownloadModel(MelissaHub.ModelFileName, MelissaHub.GgmlType);
+
 // A assistente precisa ser um Singleton para ser persistido o contexto da conversa
 builder.Services.AddSingleton(melissa);
 

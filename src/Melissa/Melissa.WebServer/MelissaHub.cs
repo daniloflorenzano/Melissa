@@ -15,6 +15,9 @@ namespace Melissa.WebServer;
 
 public class MelissaHub : Hub
 {
+    public static readonly string ModelFileName = "ggml-medium.bin";
+    public static readonly GgmlType GgmlType = GgmlType.Medium;
+    
     public async IAsyncEnumerable<string> AskMelissaText(string message, [FromServices] MelissaAssistant melissa,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
@@ -34,18 +37,109 @@ public class MelissaHub : Hub
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         using var ms = new MemoryStream();
+    
+        await foreach (var chunk in audioStream.WithCancellation(cancellationToken))
+        {
+            await ms.WriteAsync(chunk, cancellationToken);
+        }
+    
+        if (!File.Exists(ModelFileName))
+        {
+            await DownloadModel(ModelFileName, GgmlType);
+        }
+    
+        using var whisperFactory = WhisperFactory.FromPath("ggml-medium.bin");
+        await using var processor = whisperFactory.CreateBuilder()
+            .WithLanguage("pt")
+            .Build();
+    
+        var pcmBytes = ms.ToArray();
+        var wavBytes = GenerateWav(pcmBytes);
+    
+        var wavStream = new MemoryStream(wavBytes);
+        wavStream.Seek(0, SeekOrigin.Begin);
+        
+        // // salva audio temporariamente para debug
+        var tempWavPath = Path.Combine(Path.GetTempPath(), "debug_input.wav");
+        await File.WriteAllBytesAsync(tempWavPath, wavBytes, cancellationToken);
+        
+        Log.Information("Iniciando transcrição de áudio...");
+    
+        var msgBuilder = new StringBuilder();
+        await foreach (var result in processor.ProcessAsync(wavStream, cancellationToken))
+        {
+            msgBuilder.Append(result.Text);
+        }
+    
+        var message = msgBuilder.ToString();
+        Log.Information("Usuário: {0}", message);
+    
+        var question = new Question(message, "AudioHub", DateTimeOffset.Now);
+        string melissaReply;
+        var (isAvailable, statusMessage) = await melissa.CanUse();
+    
+        if (isAvailable)
+            melissaReply =
+                await MelissaHub.SafeAskMelissaWithErrorHandlingAndRetry(melissa, question, cancellationToken);
+        else
+            melissaReply = statusMessage;
+    
+    
+        var edgeTts = new EdgeTTSNet();
+    
+        var voices = await edgeTts.GetVoices();
+        var cnVoice = voices.FirstOrDefault(v => v.ShortName == "pt-BR-FranciscaNeural");
+        var options = new TTSOption
+        (
+            voice: cnVoice!.Name,
+            pitch: "+0Hz",
+            rate: "+25%",
+            volume: "+0%"
+        );
+    
+        Log.Information("Assistente: {0}", melissaReply);
+    
+    
+        edgeTts = new EdgeTTSNet(options);
+        var channel = Channel.CreateUnbounded<byte[]>();
+    
+        _ = Task.Run(async () =>
+        {
+            await edgeTts.TTS(melissaReply, (metaObj) =>
+            {
+                if (metaObj.Type == TTSMetadataType.Audio)
+                {
+                    channel.Writer.TryWrite(metaObj.Data);
+                }
+            }, cancellationToken);
+    
+            channel.Writer.Complete();
+        }, cancellationToken);
+    
+        await foreach (var audioChunk in channel.Reader.ReadAllAsync(cancellationToken))
+        {
+            yield return audioChunk;
+        }
+    }
+    
+    public async IAsyncEnumerable<byte[]> AskMelissaAudioFromMobile(IAsyncEnumerable<byte[]> audioStream,
+        [FromServices] MelissaAssistant melissa,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        using var ms = new MemoryStream();
 
         await foreach (var chunk in audioStream.WithCancellation(cancellationToken))
         {
             await ms.WriteAsync(chunk, cancellationToken);
         }
 
-        var ggmlType = GgmlType.Medium;
-        var modelFileName = "ggml-medium.bin";
-
-        if (!File.Exists(modelFileName))
+        // ✅ NOVO: Decodificar AAC para PCM
+        var aacBytes = ms.ToArray();
+        var pcmBytes = await AudioDecoder.DecodeAACToPCM(aacBytes);
+        
+        if (!File.Exists(ModelFileName))
         {
-            await DownloadModel(modelFileName, ggmlType);
+            await DownloadModel(ModelFileName, GgmlType);
         }
 
         using var whisperFactory = WhisperFactory.FromPath("ggml-medium.bin");
@@ -53,11 +147,18 @@ public class MelissaHub : Hub
             .WithLanguage("pt")
             .Build();
 
-        var pcmBytes = ms.ToArray();
+        // ✅ Usar PCM decodificado em vez de tentar converter
         var wavBytes = GenerateWav(pcmBytes);
 
         var wavStream = new MemoryStream(wavBytes);
         wavStream.Seek(0, SeekOrigin.Begin);
+        
+        // salva audio temporariamente para debug
+        var tempWavPath = Path.Combine(Path.GetTempPath(), "debug_input.wav");
+        await File.WriteAllBytesAsync(tempWavPath, wavBytes, cancellationToken);
+        
+        Log.Information("Salvou WAV em debug para: {path}", tempWavPath);
+        Log.Information("Iniciando transcrição de áudio...");
 
         var msgBuilder = new StringBuilder();
         await foreach (var result in processor.ProcessAsync(wavStream, cancellationToken))
@@ -78,9 +179,7 @@ public class MelissaHub : Hub
         else
             melissaReply = statusMessage;
 
-
         var edgeTts = new EdgeTTSNet();
-
         var voices = await edgeTts.GetVoices();
         var cnVoice = voices.FirstOrDefault(v => v.ShortName == "pt-BR-FranciscaNeural");
         var options = new TTSOption
@@ -92,7 +191,6 @@ public class MelissaHub : Hub
         );
 
         Log.Information("Assistente: {0}", melissaReply);
-
 
         edgeTts = new EdgeTTSNet(options);
         var channel = Channel.CreateUnbounded<byte[]>();
@@ -151,9 +249,12 @@ public class MelissaHub : Hub
         return ms.ToArray();
     }
 
-    static async Task DownloadModel(string fileName, GgmlType ggmlType)
+    public static async Task DownloadModel(string fileName, GgmlType ggmlType)
     {
-        Console.WriteLine($"Downloading Model {fileName}");
+        if (File.Exists(fileName))
+            return;
+        
+        Log.Information("Baixando modelo {FileName}", fileName);
         await using var modelStream = await WhisperGgmlDownloader.Default.GetGgmlModelAsync(ggmlType);
         await using var fileWriter = File.OpenWrite(fileName);
         await modelStream.CopyToAsync(fileWriter);
