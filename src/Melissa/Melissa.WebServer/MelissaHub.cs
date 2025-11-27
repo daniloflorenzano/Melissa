@@ -59,10 +59,6 @@ public class MelissaHub : Hub
         var wavStream = new MemoryStream(wavBytes);
         wavStream.Seek(0, SeekOrigin.Begin);
         
-        // // salva audio temporariamente para debug
-        var tempWavPath = Path.Combine(Path.GetTempPath(), "debug_input.wav");
-        await File.WriteAllBytesAsync(tempWavPath, wavBytes, cancellationToken);
-        
         Log.Information("Iniciando transcrição de áudio...");
     
         var msgBuilder = new StringBuilder();
@@ -153,11 +149,6 @@ public class MelissaHub : Hub
         var wavStream = new MemoryStream(wavBytes);
         wavStream.Seek(0, SeekOrigin.Begin);
         
-        // salva audio temporariamente para debug
-        var tempWavPath = Path.Combine(Path.GetTempPath(), "debug_input.wav");
-        await File.WriteAllBytesAsync(tempWavPath, wavBytes, cancellationToken);
-        
-        Log.Information("Salvou WAV em debug para: {path}", tempWavPath);
         Log.Information("Iniciando transcrição de áudio...");
 
         var msgBuilder = new StringBuilder();
