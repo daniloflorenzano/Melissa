@@ -44,11 +44,9 @@ public class MelissaHub : Hub
         }
     
         if (!File.Exists(ModelFileName))
-        {
             await DownloadModel(ModelFileName, GgmlType);
-        }
     
-        using var whisperFactory = WhisperFactory.FromPath("ggml-medium.bin");
+        using var whisperFactory = WhisperFactory.FromPath(ModelFileName);
         await using var processor = whisperFactory.CreateBuilder()
             .WithLanguage("pt")
             .Build();
@@ -56,15 +54,17 @@ public class MelissaHub : Hub
         var pcmBytes = ms.ToArray();
         var wavBytes = GenerateWav(pcmBytes);
     
-        var wavStream = new MemoryStream(wavBytes);
-        wavStream.Seek(0, SeekOrigin.Begin);
-        
-        Log.Information("Iniciando transcrição de áudio...");
-    
         var msgBuilder = new StringBuilder();
-        await foreach (var result in processor.ProcessAsync(wavStream, cancellationToken))
+        using (var wavStream = new MemoryStream(wavBytes))
         {
-            msgBuilder.Append(result.Text);
+            wavStream.Seek(0, SeekOrigin.Begin);
+        
+            Log.Information("Iniciando transcrição de áudio...");
+    
+            await foreach (var result in processor.ProcessAsync(wavStream, cancellationToken))
+            {
+                msgBuilder.Append(result.Text);
+            }
         }
     
         var message = msgBuilder.ToString();
@@ -74,12 +74,9 @@ public class MelissaHub : Hub
         string melissaReply;
         var (isAvailable, statusMessage) = await melissa.CanUse();
     
-        if (isAvailable)
-            melissaReply =
-                await MelissaHub.SafeAskMelissaWithErrorHandlingAndRetry(melissa, question, cancellationToken);
-        else
-            melissaReply = statusMessage;
-    
+        melissaReply = isAvailable
+            ? await SafeAskMelissaWithErrorHandlingAndRetry(melissa, question, cancellationToken)
+            : statusMessage;
     
         var edgeTts = new EdgeTTSNet();
     
@@ -133,17 +130,14 @@ public class MelissaHub : Hub
         var aacBytes = ms.ToArray();
         var pcmBytes = await AudioDecoder.DecodeAACToPCM(aacBytes);
         
-        if (!File.Exists(ModelFileName))
-        {
+        if (!File.Exists(ModelFileName)) 
             await DownloadModel(ModelFileName, GgmlType);
-        }
 
-        using var whisperFactory = WhisperFactory.FromPath("ggml-medium.bin");
+        using var whisperFactory = WhisperFactory.FromPath(ModelFileName);
         await using var processor = whisperFactory.CreateBuilder()
             .WithLanguage("pt")
             .Build();
 
-        // ✅ Usar PCM decodificado em vez de tentar converter
         var wavBytes = GenerateWav(pcmBytes);
 
         var wavStream = new MemoryStream(wavBytes);
@@ -164,11 +158,9 @@ public class MelissaHub : Hub
         string melissaReply;
         var (isAvailable, statusMessage) = await melissa.CanUse();
 
-        if (isAvailable)
-            melissaReply =
-                await MelissaHub.SafeAskMelissaWithErrorHandlingAndRetry(melissa, question, cancellationToken);
-        else
-            melissaReply = statusMessage;
+        melissaReply = isAvailable
+            ? await SafeAskMelissaWithErrorHandlingAndRetry(melissa, question, cancellationToken)
+            : statusMessage;
 
         var edgeTts = new EdgeTTSNet();
         var voices = await edgeTts.GetVoices();

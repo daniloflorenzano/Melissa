@@ -27,8 +27,9 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateLogger();
 
+var ollamaUrl = builder.Configuration.GetValue<string>("OllamaUrl") ?? "http://localhost:11434";
 var assistantFactory = new AssistantFactory();
-var melissa = await assistantFactory.TryCreateMelissa(TimeSpan.FromSeconds(10));
+var melissa = await assistantFactory.TryCreateMelissa(TimeSpan.FromSeconds(10), ollamaUrl);
 
 await MelissaHub.DownloadModel(MelissaHub.ModelFileName, MelissaHub.GgmlType);
 

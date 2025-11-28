@@ -10,13 +10,14 @@ namespace Melissa.Core.Assistants;
 public class AssistantFactory
 {
     private readonly IChatBuilder _builder = new OllamaChatBuilder();
-    
+
     /// <summary>
     /// Cria Melissa. Possui sistema de retry em caso de erro. 
     /// </summary>
     /// <param name="timeBetweenRetries">Tempo entre as tentativas</param>
+    /// <param name="ollamaUrl"></param>
     /// <returns></returns>
-    public async Task<Melissa> TryCreateMelissa(TimeSpan timeBetweenRetries)
+    public async Task<Melissa> TryCreateMelissa(TimeSpan timeBetweenRetries, string ollamaUrl)
     {
         var n = 1;
         
@@ -24,7 +25,7 @@ public class AssistantFactory
         {
             try
             {   
-                var melissa = new Melissa(_builder);
+                var melissa = new Melissa(_builder, ollamaUrl);
                 Log.Information("Melissa iniciada");
                 return melissa;
             }

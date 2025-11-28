@@ -7,5 +7,6 @@ public interface IChatBuilder
     string SystemMessage { get; set; }
     Dictionary<string, object> Parameters { get; }
     IChatBuilder AddTool(object tool);
+    string OllamaUrl { get; set; }
     Task<IChat> Build();
 }
