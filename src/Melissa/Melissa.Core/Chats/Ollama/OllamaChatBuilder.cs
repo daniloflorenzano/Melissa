@@ -10,6 +10,7 @@ public class OllamaChatBuilder : IChatBuilder
 {
     public ModelName ModelName { get; set; }
     public ModelName? ModelFrom { get; set; }
+    public string OllamaUrl { get; set; }
     public Dictionary<string, object> Parameters { get; } = new();
     public string SystemMessage { get; set; } = string.Empty;
     public List<object> Tools { get; } = [];
@@ -24,10 +25,7 @@ public class OllamaChatBuilder : IChatBuilder
     {
         try
         {
-            var baseUrl = Environment.GetEnvironmentVariable("OLLAMA_URL") 
-                          ?? Environment.GetEnvironmentVariable("OllamaUrl") 
-                          ?? "http://localhost:11434";
-            var uri = new Uri(baseUrl);
+            var uri = new Uri(OllamaUrl);
             var ollama = new OllamaApiClient(uri);
 
             var modelName = $"{EnumHelper.GetEnumDescription(ModelName)}:latest";

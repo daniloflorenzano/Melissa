@@ -34,6 +34,16 @@ public class AppEndpoints
         await holidayService.ExportNationalHolidaysToTxt();
     }
 
+    /// <summary>
+    /// Retorna os feriados nacionais como string no formato txt.
+    /// </summary>
+    /// <returns></returns>
+    public static async Task<string> GetNationalHolidaysAsTxt()
+    {
+        var holidayService = new HolidayService();
+        return await holidayService.GetNationalHolidaysAsTxt();
+    }
+
     #region TaskList
 
     /// <summary>

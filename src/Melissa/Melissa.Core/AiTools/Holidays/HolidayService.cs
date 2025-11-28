@@ -185,4 +185,20 @@ public class HolidayService
             }
         }
     }
+
+    /// <summary>
+    /// Retorna o conteúdo dos feriados nacionais como string no formato txt.
+    /// </summary>
+    public async Task<string> GetNationalHolidaysAsTxt()
+    {
+        var nationalHolidays = await _dbContext.Holidays
+            .Where(h => h.Type == HolidayType.National)
+            .OrderBy(h => h.Date)
+            .ToListAsync();
+
+        var lines = nationalHolidays
+            .Select(holiday => $"{holiday.Description}: {holiday.Date:dd/MM/yyyy}");
+
+        return string.Join("\n", lines);
+    }
 }

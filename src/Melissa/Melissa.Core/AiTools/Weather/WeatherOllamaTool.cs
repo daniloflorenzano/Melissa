@@ -17,11 +17,19 @@ public class WeatherOllamaTool
         
         if (string.IsNullOrWhiteSpace(location))
             return "Não foi possível identificar a cidade/estado desejado. Por favor, tente novamente.";
-        
-        var service = new WeatherService();
-        var weatherReturn = await service.GetWeatherAsync(location);
-            
-        Log.Information("Temperatura atual obtida: {Temperature}C para a cidade: {City}", weatherReturn.TemperaturaAtual, weatherReturn.Cidade);
-        return $"A Temperatura atual em {weatherReturn.Cidade} é de: {weatherReturn.TemperaturaAtual}C.";
+
+        try
+        {
+            var service = new WeatherService();
+            var weatherReturn = await service.GetWeatherAsync(location);
+                
+            Log.Information("Temperatura atual obtida: {Temperature}C para a cidade: {City}", weatherReturn.TemperaturaAtual, weatherReturn.Cidade);
+            return $"A Temperatura atual em {weatherReturn.Cidade} é de: {weatherReturn.TemperaturaAtual}C.";
+        }
+        catch (Exception e)
+        {
+            Log.Error("Falha ao obter a temperatura para a localização {Location}: {ErrorMessage}", location, e.Message);
+            return $"Não foi possível obter a temperatura para a localização {location}. Por favor, tente novamente mais tarde.";
+        }
     }
 }

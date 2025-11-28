@@ -11,10 +11,10 @@
     depends_on:
       - ollama
     environment:
-      - HolidaysCsvPath=/app/Data/holidays_2025.csv
       - AllUNeedApiUrl=https://alluneed.com.br/api/
       - AllUNeedApiKey=
       - OLLAMA_URL=http://ollama:11434
+      - TZ=America/Sao_Paulo
 
   ollama:
     image: ollama/ollama:latest
@@ -22,6 +22,15 @@
     ports:
       - "11434"
     restart: unless-stopped
+    environment:
+      - TZ=America/Sao_Paulo
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1 
+              capabilities: [ gpu ]
     
 networks:
     default:
